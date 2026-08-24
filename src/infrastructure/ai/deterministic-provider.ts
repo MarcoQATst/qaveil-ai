@@ -57,12 +57,108 @@ export class DeterministicAIProvider implements AIProvider {
         ...(mentionsAuth ? [{ risk: portuguese ? "Acesso não autorizado" : "Unauthorized access", whyItMatters: portuguese ? "Dados ou ações da conta não podem ser expostos a outro usuário." : "Account data or actions must not be exposed to another user.", suggestedTest: portuguese ? "Executar a ação com sessão expirada e com outro usuário autenticado." : "Attempt the action with an expired session and another authenticated user.", priority: "CRITICAL" as const }] : []),
       ],
       scenarios: [
-        { id: "SC-001", title: portuguese ? "Executar o fluxo com dados válidos" : "Complete the flow with valid data", category: "POSITIVE", description: portuguese ? "Confirmar que o ator autorizado conclui a ação solicitada." : "Confirm that an authorized actor completes the requested action.", priority: "HIGH", expectedBehavior: portuguese ? "A alteração é persistida e uma confirmação clara é apresentada." : "The change is persisted and a clear confirmation is shown.", automation: "AUTOMATION_HIGHLY_RECOMMENDED" },
-        { id: "SC-002", title: portuguese ? "Rejeitar dados inválidos" : "Reject invalid input", category: "NEGATIVE", description: portuguese ? "Enviar dados ausentes ou inválidos na requisição." : "Submit missing or invalid data in the request.", priority: "HIGH", expectedBehavior: portuguese ? "A validação impede a alteração e apresenta mensagem acionável." : "Validation prevents the change and shows an actionable message.", automation: "AUTOMATION_HIGHLY_RECOMMENDED" },
-        { id: "SC-003", title: portuguese ? "Validar valores de limite" : "Validate boundary values", category: "BOUNDARY", description: portuguese ? "Testar os valores mínimo, máximo e imediatamente fora das regras." : "Test the minimum, maximum, and values immediately outside the rules.", priority: "MEDIUM", expectedBehavior: portuguese ? "Somente valores dentro do limite são aceitos." : "Only values within the boundary are accepted.", automation: "AUTOMATION_RECOMMENDED" },
-        { id: "SC-004", title: portuguese ? "Bloquear acesso não autorizado" : "Block unauthorized access", category: "SECURITY", description: portuguese ? "Tentar a ação sem autenticação válida ou com usuário diferente." : "Attempt the action without valid authentication or as another user.", priority: "CRITICAL", expectedBehavior: portuguese ? "O acesso é negado sem expor dados sensíveis." : "Access is denied without exposing sensitive data.", automation: "AUTOMATION_HIGHLY_RECOMMENDED" },
-        ...(mentionsIntegration ? [{ id: "SC-005", title: portuguese ? "Tratar falha da integração" : "Handle integration failure", category: "INTEGRATION" as const, description: portuguese ? "Simular timeout e erro do serviço dependente." : "Simulate a timeout and error from the dependent service.", priority: "HIGH" as const, expectedBehavior: portuguese ? "O estado permanece consistente e o usuário recebe uma orientação clara." : "State remains consistent and the user receives clear guidance.", automation: "AUTOMATION_RECOMMENDED" as const }] : []),
-        { id: "SC-006", title: portuguese ? "Evitar regressão de dados existentes" : "Avoid regression on existing data", category: "REGRESSION", description: portuguese ? "Confirmar que fluxos relacionados continuam funcionando após a alteração." : "Confirm related flows continue working after the change.", priority: "MEDIUM", expectedBehavior: portuguese ? "Dados e fluxos previamente suportados permanecem íntegros." : "Previously supported data and flows remain intact.", automation: "AUTOMATION_RECOMMENDED" },
+        {
+          id: "SC-001",
+          title: portuguese ? "Executar o fluxo com dados válidos" : "Complete the flow with valid data",
+          type: "Functional",
+          category: "POSITIVE",
+          description: portuguese ? "Confirmar que o ator autorizado conclui a ação solicitada." : "Confirm that an authorized actor completes the requested action.",
+          prerequisites: portuguese
+            ? ["Usuário autenticado e com permissão", "Sistema online", "Dados de entrada válidos"]
+            : ["Authenticated user with correct permission", "System online", "Valid input data"],
+          testData: "N/A",
+          gherkin: portuguese
+            ? "Cenário: Executar fluxo com dados válidos\n  Dado que o usuário está autenticado e tem permissão\n  Quando envia dados de entrada válidos\n  Então o fluxo deve ser executado com sucesso"
+            : "Scenario: Execute flow with valid data\n  Given the user is authenticated and has permission\n  When valid input data is submitted\n  Then the flow should be executed successfully",
+          priority: "HIGH",
+          expectedBehavior: portuguese ? "A alteração é persistida e uma confirmação clara é apresentada." : "The change is persisted and a clear confirmation is shown.",
+          automation: "AUTOMATION_HIGHLY_RECOMMENDED"
+        },
+        {
+          id: "SC-002",
+          title: portuguese ? "Rejeitar dados inválidos" : "Reject invalid input",
+          type: "Functional",
+          category: "NEGATIVE",
+          description: portuguese ? "Enviar dados ausentes ou inválidos na requisição." : "Submit missing or invalid data in the request.",
+          prerequisites: portuguese
+            ? ["Usuário está na tela/fluxo", "Dados inválidos preparados"]
+            : ["User is in the workflow", "Invalid input data prepared"],
+          testData: "Invalid input values",
+          gherkin: portuguese
+            ? "Cenário: Rejeitar dados inválidos\n  Dado que o usuário está no fluxo\n  Quando fornece dados inválidos\n  Então o sistema deve exibir uma mensagem de erro"
+            : "Scenario: Reject invalid input\n  Given the user is in the workflow\n  When invalid data is submitted\n  Then the system should display an error message",
+          priority: "HIGH",
+          expectedBehavior: portuguese ? "A validação impede a alteração e apresenta mensagem acionável." : "Validation prevents the change and shows an actionable message.",
+          automation: "AUTOMATION_HIGHLY_RECOMMENDED"
+        },
+        {
+          id: "SC-003",
+          title: portuguese ? "Validar valores de limite" : "Validate boundary values",
+          type: "Functional",
+          category: "BOUNDARY",
+          description: portuguese ? "Testar os valores mínimo, máximo e imediatamente fora das regras." : "Test the minimum, maximum, and values immediately outside the rules.",
+          prerequisites: portuguese
+            ? ["Valores de limite identificados"]
+            : ["Boundary values identified"],
+          testData: "Boundary edge cases",
+          gherkin: portuguese
+            ? "Cenário: Validar valores limite\n  Dado que os limites estão definidos\n  Quando os valores de limite são inseridos\n  Então o sistema deve processá-los corretamente"
+            : "Scenario: Validate boundary values\n  Given boundary limits are defined\n  When boundary values are input\n  Then the system should process them correctly",
+          priority: "MEDIUM",
+          expectedBehavior: portuguese ? "Somente valores dentro do limite são aceitos." : "Only values within the boundary are accepted.",
+          automation: "AUTOMATION_RECOMMENDED"
+        },
+        {
+          id: "SC-004",
+          title: portuguese ? "Bloquear acesso não autorizado" : "Block unauthorized access",
+          type: "Security",
+          category: "SECURITY",
+          description: portuguese ? "Tentar a ação sem autenticação válida ou com usuário diferente." : "Attempt the action without valid authentication or as another user.",
+          prerequisites: portuguese
+            ? ["Sessão do usuário inválida ou expirada"]
+            : ["Invalid or expired user session"],
+          testData: "Expired token, missing token",
+          gherkin: portuguese
+            ? "Cenário: Bloquear acesso não autorizado\n  Dado que o usuário não está autenticado\n  Quando tenta executar a ação\n  Então o acesso deve ser bloqueado"
+            : "Scenario: Block unauthorized access\n  Given the user is not authenticated\n  When attempting to perform the action\n  Then access should be blocked",
+          priority: "CRITICAL",
+          expectedBehavior: portuguese ? "O acesso é negado sem expor dados sensíveis." : "Access is denied without exposing sensitive data.",
+          automation: "AUTOMATION_HIGHLY_RECOMMENDED"
+        },
+        ...(mentionsIntegration ? [{
+          id: "SC-005",
+          title: portuguese ? "Tratar falha da integração" : "Handle integration failure",
+          type: "Integration",
+          category: "INTEGRATION" as const,
+          description: portuguese ? "Simular timeout e erro do serviço dependente." : "Simulate a timeout and error from the dependent service.",
+          prerequisites: portuguese
+            ? ["Serviço externo/integração offline"]
+            : ["External integration service is offline"],
+          testData: "N/A",
+          gherkin: portuguese
+            ? "Cenário: Tratar falha da integração\n  Dado que o serviço de integração está offline\n  Quando a ação é solicitada\n  Então o sistema deve falhar graciosamente"
+            : "Scenario: Handle integration failure\n  Given the integration service is offline\n  When the action is requested\n  Then the system should fail gracefully",
+          priority: "HIGH" as const,
+          expectedBehavior: portuguese ? "O estado permanece consistente e o usuário recebe uma orientação clara." : "State remains consistent and the user receives clear guidance.",
+          automation: "AUTOMATION_RECOMMENDED" as const
+        }] : []),
+        {
+          id: "SC-006",
+          title: portuguese ? "Evitar regressão de dados existentes" : "Avoid regression on existing data",
+          type: "Regression",
+          category: "REGRESSION",
+          description: portuguese ? "Confirmar que fluxos relacionados continuam funcionando após a alteração." : "Confirm related flows continue working after the change.",
+          prerequisites: portuguese
+            ? ["Alterações recentes implantadas"]
+            : ["Recent changes deployed"],
+          testData: "N/A",
+          gherkin: portuguese
+            ? "Cenário: Evitar regressão de dados existentes\n  Dado que a funcionalidade principal está ativa\n  Quando novos dados são processados\n  Então os dados existentes permanecem inalterados"
+            : "Scenario: Avoid regression on existing data\n  Given primary functionality is active\n  When new data is processed\n  Then existing data remains unchanged",
+          priority: "MEDIUM",
+          expectedBehavior: portuguese ? "Dados e fluxos previamente suportados permanecem íntegros." : "Previously supported data and flows remain intact.",
+          automation: "AUTOMATION_RECOMMENDED"
+        },
       ],
       edgeCases: [
         { value: "null", category: "INVALID_INPUT", reason: portuguese ? "Confirma o comportamento quando o campo obrigatório não é enviado." : "Confirms behavior when a required field is not sent." },

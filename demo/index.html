@@ -1,0 +1,2120 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="QAVeil AI — Interactive demo. Reveal what your requirements don't tell you." />
+  <title>QAVeil AI — Demo</title>
+  <style>
+    /* =============================================
+       DESIGN TOKENS
+    ============================================= */
+    :root {
+      --bg-base:       #080f18;
+      --bg-surface:    #0c1620;
+      --bg-card:       #101e2b;
+      --bg-input:      #0a1520;
+      --bg-code:       #060d15;
+
+      --border:        #1c3040;
+      --border-light:  #243a4d;
+
+      --text-primary:  #e8f4f0;
+      --text-secondary:#8aaab8;
+      --text-muted:    #4e7080;
+      --text-code:     #7bbfc8;
+
+      --accent:        #3dd6a8;
+      --accent-dim:    #2a9070;
+      --accent-glow:   rgba(61, 214, 168, 0.12);
+
+      --blue:          #4a9eff;
+      --blue-dim:      rgba(74, 158, 255, 0.15);
+
+      --risk-low:      #3dd68c;
+      --risk-medium:   #e3b94a;
+      --risk-high:     #f07a4a;
+      --risk-critical: #ff6060;
+
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+
+      --font-mono: ui-monospace, "SF Mono", Consolas, monospace;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    }
+
+    /* =============================================
+       RESET & BASE
+    ============================================= */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-base);
+      color: var(--text-primary);
+      font-size: 14px;
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* =============================================
+       LAYOUT
+    ============================================= */
+    .container {
+      max-width: 920px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+
+    /* =============================================
+       HEADER
+    ============================================= */
+    .header {
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-surface);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 58px;
+    }
+
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      color: var(--text-primary);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .logo-veil { color: var(--accent); }
+    .logo-ai {
+      font-size: 11px;
+      color: var(--blue);
+      font-weight: 700;
+      letter-spacing: 0;
+      padding: 2px 5px;
+      background: var(--blue-dim);
+      border-radius: 4px;
+      margin-left: 2px;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .badge-demo {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: #f0a84a;
+      background: rgba(240, 168, 74, 0.12);
+      border: 1px solid rgba(240, 168, 74, 0.25);
+      border-radius: 4px;
+      padding: 3px 8px;
+      text-transform: uppercase;
+    }
+
+    .status-ready {
+      font-size: 11px;
+      color: var(--risk-low);
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-weight: 600;
+    }
+
+    .status-ready::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      background: var(--risk-low);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.4; }
+    }
+
+    /* =============================================
+       HERO
+    ============================================= */
+    .hero {
+      padding: 52px 0 36px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.14em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 14px;
+    }
+
+    .hero h1 {
+      font-size: clamp(26px, 4vw, 40px);
+      font-weight: 800;
+      letter-spacing: -0.05em;
+      line-height: 1.1;
+      color: var(--text-primary);
+      margin-bottom: 10px;
+    }
+
+    .hero-sub {
+      color: var(--text-secondary);
+      font-size: 15px;
+      max-width: 480px;
+    }
+
+    /* =============================================
+       SECTIONS
+    ============================================= */
+    .section {
+      padding: 36px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .section:last-child { border-bottom: none; }
+
+    .section-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-bottom: 18px;
+    }
+
+    /* =============================================
+       ANALYZER INPUT
+    ============================================= */
+    .analyzer-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 22px;
+    }
+
+    .input-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-secondary);
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    textarea#requirement {
+      width: 100%;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      line-height: 1.6;
+      padding: 14px;
+      resize: vertical;
+      min-height: 110px;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    textarea#requirement:focus {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px var(--accent-glow);
+    }
+
+    .examples-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      margin: 14px 0 8px;
+      font-weight: 600;
+    }
+
+    .examples {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 18px;
+    }
+
+    .example-btn {
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-family: var(--font-sans);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: left;
+      line-height: 1.4;
+    }
+
+    .example-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+      background: var(--accent-glow);
+    }
+
+    .analyze-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--accent);
+      color: #030f0a;
+      font-size: 13px;
+      font-weight: 800;
+      font-family: var(--font-sans);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 11px 20px;
+      cursor: pointer;
+      transition: all 0.15s;
+      letter-spacing: 0.01em;
+    }
+
+    .analyze-btn:hover:not(:disabled) {
+      background: #4ae8b8;
+      transform: translateY(-1px);
+    }
+
+    .analyze-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .analyze-btn svg {
+      width: 15px;
+      height: 15px;
+      flex-shrink: 0;
+    }
+
+    /* =============================================
+       LOADING STATE
+    ============================================= */
+    #loading-state {
+      display: none;
+      padding: 28px 0;
+    }
+
+    .loading-steps {
+      display: grid;
+      gap: 10px;
+    }
+
+    .loading-step {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      font-size: 13px;
+      color: var(--text-muted);
+      transition: all 0.3s;
+    }
+
+    .loading-step.active {
+      border-color: var(--accent-dim);
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+
+    .loading-step.done {
+      color: var(--accent);
+      border-color: var(--border);
+    }
+
+    .step-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    .spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid var(--border-light);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* =============================================
+       RESULTS WRAPPER
+    ============================================= */
+    #results { display: none; }
+
+    /* =============================================
+       RISK SUMMARY
+    ============================================= */
+    .risk-summary {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .risk-score-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px 24px;
+      text-align: center;
+      min-width: 120px;
+    }
+
+    .risk-score-num {
+      font-size: 52px;
+      font-weight: 800;
+      letter-spacing: -0.06em;
+      line-height: 1;
+    }
+
+    .risk-score-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      margin-top: 4px;
+    }
+
+    .risk-level-badge {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 4px 10px;
+      border-radius: 99px;
+      font-size: 11px;
+      font-weight: 800;
+    }
+
+    .risk-level-badge.LOW    { background: rgba(61,214,140,0.15); color: var(--risk-low); }
+    .risk-level-badge.MEDIUM { background: rgba(227,185,74,0.15);  color: var(--risk-medium); }
+    .risk-level-badge.HIGH   { background: rgba(240,122,74,0.15);  color: var(--risk-high); }
+    .risk-level-badge.CRITICAL{ background: rgba(255,96,96,0.15);  color: var(--risk-critical); }
+
+    .risk-factors {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .risk-factor {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 13px 14px;
+    }
+
+    .risk-factor-name {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+
+    .risk-bar-track {
+      height: 5px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+
+    .risk-bar-fill {
+      height: 100%;
+      border-radius: 99px;
+      background: var(--accent);
+      transition: width 0.6s ease;
+    }
+
+    .risk-bar-value {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    /* =============================================
+       HIDDEN RISKS
+    ============================================= */
+    .risk-list { display: grid; gap: 10px; }
+
+    .risk-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .risk-item:hover { border-color: var(--border-light); }
+
+    .risk-item-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .risk-item-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+    }
+
+    .risk-severity {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 3px 8px;
+      border-radius: 99px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .sev-critical { background: rgba(255,96,96,0.15); color: var(--risk-critical); }
+    .sev-high     { background: rgba(240,122,74,0.15); color: var(--risk-high); }
+    .sev-medium   { background: rgba(227,185,74,0.15); color: var(--risk-medium); }
+    .sev-low      { background: rgba(61,214,140,0.15); color: var(--risk-low); }
+
+    .risk-item-body {
+      margin-top: 10px;
+      display: none;
+    }
+
+    .risk-item.open .risk-item-body { display: block; }
+
+    .risk-item-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      margin-bottom: 8px;
+    }
+
+    .risk-suggested {
+      font-size: 11px;
+      color: var(--accent);
+      background: var(--accent-glow);
+      border-radius: var(--radius-sm);
+      padding: 7px 10px;
+    }
+
+    .risk-suggested strong { font-weight: 700; }
+
+    .chevron {
+      transition: transform 0.2s;
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .risk-item.open .chevron { transform: rotate(180deg); }
+
+    /* =============================================
+       SCENARIO CARDS
+    ============================================= */
+    .scenario-cards { display: grid; gap: 12px; }
+
+    .scenario-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .scenario-card-top {
+      padding: 15px 16px 12px;
+    }
+
+    .scenario-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .scenario-id-cat {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    .scenario-badges { display: flex; gap: 5px; }
+
+    .badge-sc {
+      font-size: 10px;
+      font-weight: 800;
+      padding: 2px 7px;
+      border-radius: 99px;
+    }
+
+    .badge-positive    { background: rgba(61,214,140,0.15); color: var(--risk-low); }
+    .badge-negative    { background: rgba(240,122,74,0.15); color: var(--risk-high); }
+    .badge-boundary    { background: rgba(74,158,255,0.15); color: var(--blue); }
+    .badge-security    { background: rgba(255,96,96,0.15); color: var(--risk-critical); }
+    .badge-integration { background: rgba(180,140,255,0.15); color: #b090ff; }
+    .badge-regression  { background: rgba(227,185,74,0.12); color: var(--risk-medium); }
+
+    .badge-auto {
+      background: rgba(61,214,168,0.08);
+      color: var(--accent-dim);
+    }
+
+    .scenario-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 5px;
+    }
+
+    .scenario-desc {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .scenario-card-bottom {
+      border-top: 1px solid var(--border);
+      padding: 12px 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .prereq-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+      color: var(--accent-dim);
+      margin-bottom: 6px;
+    }
+
+    .prereq-list {
+      list-style: none;
+      display: grid;
+      gap: 4px;
+    }
+
+    .prereq-list li {
+      font-size: 12px;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: flex-start;
+      gap: 6px;
+      line-height: 1.4;
+    }
+
+    .prereq-list li::before {
+      content: '—';
+      color: var(--text-muted);
+      flex-shrink: 0;
+      font-size: 11px;
+    }
+
+    .gherkin-section details {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .scenario-section { padding-top: 10px; border-top: 1px solid var(--border); }
+    .scenario-section h4 { margin: 0 0 6px; color: var(--accent); font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+    .scenario-section ul { margin: 0; padding-left: 16px; display: grid; gap: 4px; color: var(--text-secondary); font-size: 12px; line-height: 1.4; }
+    .test-data-block { color: var(--text-primary); font-size: 12px; background: var(--bg-code); padding: 8px 12px; border-radius: 6px; border: 1px solid var(--border); white-space: pre-wrap; }
+
+    .gherkin-wrapper { border-top: 1px solid var(--border); padding-top: 12px; margin-top: 2px; }
+    .gherkin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .gherkin-header span { color: var(--text-secondary); font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; }
+    .copy-btn { background: var(--bg-surface); border: 1px solid var(--border); color: var(--accent); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 10px; font-weight: 700; transition: all .2s; }
+    .copy-btn:hover { background: var(--bg-card); }
+    .copy-btn.copied { background: var(--accent-dim); color: var(--text-primary); border-color: var(--accent); }
+
+    .gherkin-wrapper pre {
+      padding: 10px 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.7;
+      color: var(--text-code);
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      white-space: pre-wrap;
+      overflow-x: auto;
+    }
+
+    /* =============================================
+       UPLOAD ZONE
+    ============================================= */
+    .upload-zone { border: 2px dashed var(--border); border-radius: var(--radius-md); padding: 24px; text-align: center; background: var(--bg-surface); transition: all .2s; margin-bottom: 12px; }
+    .upload-zone.drag-active { border-color: var(--accent); background: var(--bg-card); }
+    .upload-label { cursor: pointer; display: block; color: var(--text-secondary); font-size: 13px; }
+    .upload-label b { color: var(--accent); }
+    .file-loaded { display: flex; justify-content: space-between; align-items: center; color: var(--text-primary); font-size: 13px; font-weight: 600; }
+    .file-loaded button { background: transparent; border: 1px solid var(--border); color: var(--risk-critical); border-radius: 4px; padding: 4px 8px; cursor: pointer; font-size: 11px; }
+
+    /* =============================================
+       EDGE CASES
+    ============================================= */
+    .edge-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 10px;
+    }
+
+    .edge-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 13px 14px;
+    }
+
+    .edge-value {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--blue);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+
+    .edge-cat {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .edge-reason {
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    /* =============================================
+       AUTOMATION
+    ============================================= */
+    .automation-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+    }
+
+    .automation-row {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .automation-stat {
+      flex: 1;
+      min-width: 140px;
+    }
+
+    .automation-stat-label {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 5px;
+    }
+
+    .automation-stat-value {
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--accent);
+    }
+
+    .automation-recs { display: grid; gap: 7px; }
+
+    .automation-rec-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      font-size: 12px;
+      color: var(--text-secondary);
+      line-height: 1.4;
+    }
+
+    .auto-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      flex-shrink: 0;
+      margin-top: 5px;
+    }
+
+    /* =============================================
+       GHERKIN VIEW
+    ============================================= */
+    .gherkin-view-block {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+    }
+
+    .gherkin-view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .gherkin-view-title {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .copy-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-input);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 700;
+      font-family: var(--font-sans);
+      padding: 5px 10px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .copy-btn:hover {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    .copy-btn.copied {
+      color: var(--risk-low);
+      border-color: rgba(61,214,140,0.3);
+    }
+
+    .gherkin-view-pre {
+      padding: 18px 20px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.75;
+      color: var(--text-code);
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    /* =============================================
+       FOOTER
+    ============================================= */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 22px 0;
+      margin-top: 20px;
+    }
+
+    .footer-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .footer-brand {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .footer-brand span { color: var(--accent); }
+
+    .footer-note {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-style: italic;
+    }
+
+    /* =============================================
+       UTILITIES
+    ============================================= */
+    .mt-6  { margin-top: 6px; }
+    .mt-10 { margin-top: 10px; }
+    .mt-16 { margin-top: 16px; }
+
+    /* =============================================
+       RESPONSIVE
+    ============================================= */
+    @media (max-width: 640px) {
+      .risk-summary { grid-template-columns: 1fr; }
+      .risk-factors { grid-template-columns: 1fr; }
+      .edge-grid    { grid-template-columns: 1fr; }
+      .automation-row { flex-direction: column; gap: 12px; }
+      .hero { padding: 36px 0 28px; }
+      .gherkin-view-pre { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ======================================
+       HEADER
+  ======================================= -->
+  <header class="header">
+    <div class="container">
+      <div class="header-inner">
+        <a href="#" class="logo" aria-label="QAVeil AI">
+          QA<span class="logo-veil">Veil</span><span class="logo-ai">AI</span>
+        </a>
+        <div class="header-right">
+          <span class="badge-demo" aria-label="Demo mode indicator">Demo Mode</span>
+          <span class="status-ready" aria-live="polite">Ready</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="container">
+
+      <!-- ======================================
+           HERO
+      ======================================= -->
+      <section class="hero" aria-labelledby="hero-title">
+        <div class="hero-label">Quality Engineering Intelligence</div>
+        <h1 id="hero-title">Reveal what your requirements<br>don't tell you.</h1>
+        <p class="hero-sub">Turn requirements into risks, questions, and test scenarios before they become defects.</p>
+      </section>
+
+      <!-- ======================================
+           REQUIREMENT ANALYZER
+      ======================================= -->
+      <section class="section" aria-labelledby="analyzer-label">
+        <div class="section-label" id="analyzer-label">Requirement Analyzer</div>
+
+        <div class="analyzer-card">
+          <div class="upload-zone" id="uploadZone">
+            <label class="upload-label" id="uploadLabel">
+              <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.md" hidden />
+              <span>Arraste um documento (PDF, DOCX, TXT, MD) ou <b>clique para selecionar</b></span>
+            </label>
+            <div class="file-loaded" id="fileLoaded" style="display: none;">
+              <span id="fileName">📄 documento.pdf</span>
+              <button type="button" onclick="removeFile()">Remover</button>
+            </div>
+          </div>
+          <label class="input-label" for="requirement">Paste your requirement, user story or acceptance criteria</label>
+          <textarea
+            id="requirement"
+            aria-label="Requirement input"
+            placeholder="As a user, I want to reset my password via email so I can regain access to my account."
+          ></textarea>
+
+          <div class="examples-label">Try an example:</div>
+          <div class="examples" role="list" aria-label="Example requirements">
+            <button
+              class="example-btn"
+              role="listitem"
+              onclick="loadExample(0)"
+              aria-label="Load password recovery example">
+              🔑 Password recovery via e-mail
+            </button>
+            <button
+              class="example-btn"
+              role="listitem"
+              onclick="loadExample(1)"
+              aria-label="Load credit card payment example">
+              💳 Credit card payment checkout
+            </button>
+            <button
+              class="example-btn"
+              role="listitem"
+              onclick="loadExample(2)"
+              aria-label="Load delivery address update example">
+              📦 Update delivery address before dispatch
+            </button>
+          </div>
+
+          <button
+            class="analyze-btn"
+            id="analyze-btn"
+            onclick="runAnalysis()"
+            aria-label="Analyze requirement">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+              <path d="M9 3H5a2 2 0 0 0-2 2v4m6-6h10a2 2 0 0 1 2 2v4M9 3v18m0 0h10a2 2 0 0 0 2-2V9M9 21H5a2 2 0 0 1-2-2V9m0 0h18"/>
+            </svg>
+            Analyze Requirement
+          </button>
+        </div>
+      </section>
+
+      <!-- ======================================
+           LOADING STATE
+      ======================================= -->
+      <section id="loading-state" aria-label="Analysis in progress" aria-live="polite">
+        <div class="loading-steps" id="loading-steps">
+          <div class="loading-step" id="step-0" role="status">
+            <div class="step-icon" aria-hidden="true">⬜</div>
+            Understanding requirement
+          </div>
+          <div class="loading-step" id="step-1" role="status">
+            <div class="step-icon" aria-hidden="true">⬜</div>
+            Identifying risks
+          </div>
+          <div class="loading-step" id="step-2" role="status">
+            <div class="step-icon" aria-hidden="true">⬜</div>
+            Designing test scenarios
+          </div>
+          <div class="loading-step" id="step-3" role="status">
+            <div class="step-icon" aria-hidden="true">⬜</div>
+            Finding edge cases
+          </div>
+          <div class="loading-step" id="step-4" role="status">
+            <div class="step-icon" aria-hidden="true">⬜</div>
+            Generating Gherkin
+          </div>
+        </div>
+      </section>
+
+      <!-- ======================================
+           RESULTS
+      ======================================= -->
+      <div id="results">
+
+        <!-- RISK SUMMARY -->
+        <section class="section" aria-labelledby="risk-label">
+          <div class="section-label" id="risk-label">Risk Summary</div>
+          <div class="risk-summary">
+            <div class="risk-score-block" aria-label="Risk score">
+              <div class="risk-score-num" id="r-score" style="color: var(--risk-critical)">—</div>
+              <div class="risk-score-label">Risk Score</div>
+              <div class="risk-level-badge" id="r-level">—</div>
+            </div>
+            <div class="risk-factors" id="risk-factors">
+              <!-- filled by JS -->
+            </div>
+          </div>
+          <p class="mt-10" id="r-rationale" style="font-size:12px;color:var(--text-secondary);line-height:1.55;"></p>
+        </section>
+
+        <!-- HIDDEN RISKS -->
+        <section class="section" aria-labelledby="hidden-risks-label">
+          <div class="section-label" id="hidden-risks-label">Hidden Risks</div>
+          <div class="risk-list" id="hidden-risks-list" role="list">
+            <!-- filled by JS -->
+          </div>
+        </section>
+
+        <!-- TEST SCENARIOS -->
+        <section class="section" aria-labelledby="scenarios-label">
+          <div class="section-label" id="scenarios-label">Test Scenarios</div>
+          <div class="scenario-cards" id="scenario-cards" role="list">
+            <!-- filled by JS -->
+          </div>
+        </section>
+
+        <!-- EDGE CASES -->
+        <section class="section" aria-labelledby="edge-cases-label">
+          <div class="section-label" id="edge-cases-label">Edge Cases</div>
+          <div class="edge-grid" id="edge-cases-grid" role="list">
+            <!-- filled by JS -->
+          </div>
+        </section>
+
+        <!-- AUTOMATION -->
+        <section class="section" aria-labelledby="automation-label">
+          <div class="section-label" id="automation-label">Automation Recommendation</div>
+          <div class="automation-block">
+            <div class="automation-row">
+              <div class="automation-stat">
+                <div class="automation-stat-label">Recommended Tool</div>
+                <div class="automation-stat-value">Playwright</div>
+              </div>
+              <div class="automation-stat">
+                <div class="automation-stat-label">Automation Priority</div>
+                <div class="automation-stat-value" id="auto-priority">High</div>
+              </div>
+              <div class="automation-stat">
+                <div class="automation-stat-label">Scenarios to Automate</div>
+                <div class="automation-stat-value" id="auto-count">—</div>
+              </div>
+            </div>
+            <div class="automation-recs" id="automation-recs" aria-label="Automation recommendations">
+              <!-- filled by JS -->
+            </div>
+          </div>
+        </section>
+
+        <!-- GHERKIN VIEW -->
+        <section class="section" aria-labelledby="gherkin-view-label">
+          <div class="section-label" id="gherkin-view-label">Gherkin — Full View</div>
+          <div class="gherkin-view-block">
+            <div class="gherkin-view-header">
+              <div class="gherkin-view-title">Feature File</div>
+              <button class="copy-btn" id="copy-btn" onclick="copyGherkin()" aria-label="Copy Gherkin to clipboard">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy Gherkin
+              </button>
+            </div>
+            <pre class="gherkin-view-pre" id="gherkin-full" aria-label="Full Gherkin feature file"></pre>
+          </div>
+        </section>
+
+      </div><!-- /results -->
+
+    </div><!-- /container -->
+  </main>
+
+  <!-- ======================================
+       FOOTER
+  ======================================= -->
+  <footer>
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">QA<span>Veil</span> AI</div>
+        <div class="footer-note">QAVeil AI — Interactive Demo. Demo responses are simulated.</div>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================================
+       JAVASCRIPT
+  ======================================= -->
+  <script>
+    'use strict';
+
+    /* ------------------------------------------
+       EXAMPLE REQUIREMENTS
+    ------------------------------------------ */
+    const EXAMPLES = [
+      `As a user, I want to recover my password via email so that I can regain access to my account when I forget my credentials.
+
+Acceptance Criteria:
+- Only registered email addresses can request a recovery link.
+- The recovery link must expire after 15 minutes.
+- Each request invalidates any previous link.
+- The user must set a new password with at least 8 characters.`,
+
+      `As a customer, I want to pay for my order using a credit card so that I can complete my purchase quickly and securely.
+
+Acceptance Criteria:
+- The system must accept Visa, Mastercard and Amex.
+- The transaction must be processed within 5 seconds.
+- Failed payments must show a clear error message.
+- The customer must receive an email confirmation after successful payment.`,
+
+      `As a customer, I want to update my shipping address before my order is dispatched so that my items arrive at the correct location.
+
+Acceptance Criteria:
+- Address changes are only allowed while the order status is "Processing".
+- The customer must confirm the change before it is saved.
+- The logistics team must be notified of the address change.
+- The previous address must be kept in the order history.`
+    ];
+
+    /* ------------------------------------------
+       MOCK ANALYSIS DATA (per example)
+    ------------------------------------------ */
+    const MOCK_DATA = [
+      // ── EXAMPLE 0: Password Recovery ──────────────────────────────────────
+      {
+        risk: {
+          score: 17,
+          level: 'CRITICAL',
+          impact: 5,
+          probability: 4,
+          complexity: 4,
+          detectability: 4,
+          rationale: 'Authentication flows carry the highest security risk. A flaw in password recovery can lead to account takeover, data breach, and reputational damage. Expiry logic and token invalidation are common sources of critical vulnerabilities.'
+        },
+        hiddenRisks: [
+          {
+            title: 'Token reuse after expiry',
+            desc: 'A previously issued recovery link may remain active if invalidation logic is not enforced server-side. An attacker who intercepts an old link could reset the password of another user.',
+            suggested: 'Send the same reset request twice and confirm the first token is invalidated after the second is issued.',
+            severity: 'CRITICAL'
+          },
+          {
+            title: 'Email enumeration',
+            desc: 'If the system returns a different response for registered vs. unregistered emails, attackers can enumerate valid accounts without needing credentials.',
+            suggested: 'Submit requests with both registered and unregistered emails and verify the response is identical in both cases.',
+            severity: 'HIGH'
+          },
+          {
+            title: 'Race condition on concurrent requests',
+            desc: 'Two simultaneous reset requests for the same account may create two valid tokens, defeating the invalidation requirement.',
+            suggested: 'Trigger two concurrent password reset requests and confirm only one valid token exists afterwards.',
+            severity: 'HIGH'
+          },
+          {
+            title: 'No rate limiting',
+            desc: 'Without request throttling, an attacker can flood the reset endpoint, causing email spam for victims or exhausting the email delivery service quota.',
+            suggested: 'Submit more than 10 requests in 1 minute from the same IP and verify the system blocks or throttles them.',
+            severity: 'MEDIUM'
+          }
+        ],
+        scenarios: [
+          {
+            id: 'SC-001', category: 'POSITIVE', title: 'Successful password reset via registered email',
+            desc: 'Validate that a registered user can complete the full password recovery flow and access the account with the new credentials.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'User is registered and account is active.',
+              'User has access to the registered email inbox.',
+              'System email delivery service is operational.',
+              'User is on the "Forgot password" screen.'
+            ],
+            gherkin: `Scenario: Successful password reset via registered email
+  Given the user is on the "Forgot Password" screen
+  And the user has a registered active account
+  When the user enters a valid registered email address
+  And clicks "Send Recovery Link"
+  Then a recovery email should be sent to the provided address
+  And the email should contain a valid one-time reset link
+  When the user opens the link within 15 minutes
+  And sets a new password with at least 8 characters
+  And confirms the new password
+  And submits the form
+  Then the password should be updated successfully
+  And the user should be redirected to the login screen
+  And the user should be able to log in with the new password`
+          },
+          {
+            id: 'SC-002', category: 'NEGATIVE', title: 'Recovery request with unregistered email',
+            desc: 'Validate that submitting an unregistered email does not expose whether the address exists in the system.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Email address used is NOT registered in the system.',
+              'User is on the "Forgot Password" screen.'
+            ],
+            gherkin: `Scenario: Recovery request with unregistered email
+  Given the user is on the "Forgot Password" screen
+  When the user enters an email address not registered in the system
+  And clicks "Send Recovery Link"
+  Then the system should display the same confirmation message as for a valid email
+  And no recovery email should be sent
+  And the system should NOT reveal whether the email exists`
+          },
+          {
+            id: 'SC-003', category: 'SECURITY', title: 'Expired recovery link is rejected',
+            desc: 'Validate that a recovery link cannot be used after the 15-minute expiry window.',
+            priority: 'CRITICAL', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'A valid recovery link has been generated.',
+              'More than 15 minutes have elapsed since the link was issued.',
+              'User has the expired link URL.'
+            ],
+            gherkin: `Scenario: Expired recovery link is rejected
+  Given a password recovery link was generated 16 minutes ago
+  When the user opens the expired recovery link
+  Then the system should display an "Link expired" error message
+  And the user should NOT be allowed to set a new password
+  And the system should offer the option to request a new recovery link`
+          },
+          {
+            id: 'SC-004', category: 'BOUNDARY', title: 'New password at minimum length boundary',
+            desc: 'Validate that a password of exactly 8 characters is accepted and that 7 characters is rejected.',
+            priority: 'MEDIUM', automation: 'AUTOMATION_RECOMMENDED',
+            prerequisites: [
+              'User has a valid unexpired recovery link.',
+              'User is on the password reset form.'
+            ],
+            gherkin: `Scenario: Password at minimum length boundary
+  Given the user is on the password reset form with a valid link
+  When the user enters a new password with exactly 8 characters
+  And confirms the password
+  And submits the form
+  Then the password should be accepted and updated
+
+  Scenario: Password below minimum length boundary
+  Given the user is on the password reset form with a valid link
+  When the user enters a new password with 7 characters
+  And confirms the password
+  And submits the form
+  Then the system should display a validation error
+  And the password should NOT be updated`
+          },
+          {
+            id: 'SC-005', category: 'SECURITY', title: 'Second reset request invalidates previous token',
+            desc: 'Validate that when a second recovery request is made, the first token is immediately invalidated.',
+            priority: 'CRITICAL', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'User has already received a first recovery link.',
+              'User requests a second recovery link before using the first.',
+              'Both links are available.'
+            ],
+            gherkin: `Scenario: Second reset request invalidates previous token
+  Given the user has received a first recovery link
+  When the user submits a second password recovery request
+  And a new recovery email is sent
+  And the user attempts to open the first (old) recovery link
+  Then the system should display an "Invalid or expired link" error
+  And the user should NOT be able to reset the password using the old link
+  And only the second (new) link should be valid`
+          }
+        ],
+        edgeCases: [
+          { value: 'empty email field', cat: 'INVALID_INPUT', reason: 'Form submission with no email should trigger inline validation, not a server request.' },
+          { value: 'malformed email (no @)', cat: 'FORMAT', reason: 'Client-side format validation must reject syntactically invalid email addresses before submission.' },
+          { value: 'link used twice', cat: 'SECURITY', reason: 'A recovery link must be single-use. Re-submitting the form after successful reset must be rejected.' },
+          { value: 'link at exactly 15 minutes', cat: 'BOUNDARY', reason: 'At the exact expiry boundary, the system must behave deterministically — either accept or reject, never both.' },
+          { value: 'network timeout during submission', cat: 'UNEXPECTED_INPUT', reason: 'If the email service is unavailable, the user must receive a clear error without the system appearing to have succeeded.' },
+          { value: 'password = username or email', cat: 'SECURITY', reason: 'New passwords that match the account email or username should be rejected as insecure if policy requires it.' },
+          { value: 'SQL injection in email field', cat: 'SECURITY', reason: 'Input must be sanitized. Injecting SQL payloads into the email field must not affect the database or return errors that expose the schema.' }
+        ],
+        automation: {
+          priority: 'High',
+          count: '4 / 5',
+          recs: [
+            'SC-001 (Happy path): Automate end-to-end with Playwright — covers email delivery, link navigation, and login with new credentials.',
+            'SC-002 (Email enumeration): Automate API-level with a request interceptor to verify identical server responses for registered vs. unregistered addresses.',
+            'SC-003 (Expired token): Automate by manipulating the system clock or token timestamp in a test database to simulate expiry without waiting 15 minutes.',
+            'SC-005 (Token invalidation): Automate with concurrent requests using Playwright or a custom HTTP client to confirm only one active token per account at a time.',
+            'SC-004 (Boundary): Manual verification recommended for initial coverage; add to regression suite once UI validation rules are confirmed.'
+          ]
+        },
+        gherkinFull: `Feature: Password Recovery
+
+  As a user
+  I want to recover my password via email
+  So that I can regain access to my account
+
+  Background:
+    Given the password recovery feature is enabled
+    And the email delivery service is operational
+
+  Scenario: Successful password reset via registered email
+    Given the user is on the "Forgot Password" screen
+    And the user has a registered active account
+    When the user enters a valid registered email address
+    And clicks "Send Recovery Link"
+    Then a recovery email should be sent to the provided address
+    And the email should contain a valid one-time reset link
+    When the user opens the link within 15 minutes
+    And sets a new password with at least 8 characters
+    And confirms the new password
+    And submits the form
+    Then the password should be updated successfully
+    And the user should be redirected to the login screen
+    And the user should be able to log in with the new password
+
+  Scenario: Recovery request with unregistered email
+    Given the user is on the "Forgot Password" screen
+    When the user enters an email address not registered in the system
+    And clicks "Send Recovery Link"
+    Then the system should display the same confirmation message as for a valid email
+    And no recovery email should be sent
+    And the system should NOT reveal whether the email exists
+
+  Scenario: Expired recovery link is rejected
+    Given a password recovery link was generated 16 minutes ago
+    When the user opens the expired recovery link
+    Then the system should display an "Link expired" error message
+    And the user should NOT be allowed to set a new password
+    And the system should offer the option to request a new recovery link
+
+  Scenario Outline: Password length boundary validation
+    Given the user is on the password reset form with a valid link
+    When the user enters a new password with <length> characters
+    And submits the form
+    Then the result should be <outcome>
+
+    Examples:
+      | length | outcome                  |
+      | 7      | validation error shown   |
+      | 8      | password updated         |
+      | 9      | password updated         |
+
+  Scenario: Second reset request invalidates previous token
+    Given the user has received a first recovery link
+    When the user submits a second password recovery request
+    And a new recovery email is sent
+    And the user attempts to open the first (old) recovery link
+    Then the system should display an "Invalid or expired link" error
+    And only the second (new) link should be valid`
+      },
+
+      // ── EXAMPLE 1: Credit Card Payment ────────────────────────────────────
+      {
+        risk: {
+          score: 18,
+          level: 'CRITICAL',
+          impact: 5,
+          probability: 4,
+          complexity: 5,
+          detectability: 4,
+          rationale: 'Payment processing involves financial transactions, PCI compliance requirements, and multiple external integrations. Failures can cause direct financial loss, fraud exposure, and regulatory penalties.'
+        },
+        hiddenRisks: [
+          {
+            title: 'Duplicate charge on retry',
+            desc: 'If a payment request times out and the user or system retries, the transaction may be processed twice, charging the customer double without them receiving a second order.',
+            suggested: 'Simulate a payment gateway timeout and trigger an automatic retry. Confirm that idempotency keys prevent duplicate charges.',
+            severity: 'CRITICAL'
+          },
+          {
+            title: 'Payment gateway downtime',
+            desc: 'If the payment provider is unavailable, the order must not be created and the cart must be preserved. A poor failure path may cause abandoned orders or phantom charges.',
+            suggested: 'Mock a 503 response from the payment gateway and verify the system preserves the cart and displays a clear error.',
+            severity: 'HIGH'
+          },
+          {
+            title: '3DS authentication loop',
+            desc: 'Some cards require 3D Secure authentication. If the redirect flow is broken or times out, the user may be stuck in an infinite redirect loop or their payment may remain in a pending state.',
+            suggested: 'Test the 3DS redirect flow with a card that triggers it, including cancellation and timeout scenarios.',
+            severity: 'HIGH'
+          },
+          {
+            title: 'Sensitive data in logs',
+            desc: 'Card numbers or CVV fragments may inadvertently be logged during request/response logging, creating PCI compliance violations.',
+            suggested: 'Inspect server logs after a test payment and verify no card data (PAN, CVV, expiry) is present in plain text.',
+            severity: 'CRITICAL'
+          }
+        ],
+        scenarios: [
+          {
+            id: 'SC-001', category: 'POSITIVE', type: 'Functional', title: 'Successful payment with valid Visa card',
+            desc: 'Validate that a customer can complete a full checkout using a valid Visa card and receives order confirmation.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Customer has items in cart.',
+              'Customer has a valid Visa card with sufficient balance.',
+              'Payment gateway sandbox is operational.',
+              'Customer is on the checkout payment screen.'
+            ],
+            testData: 'Card: Visa, Valid. CVV: 123. Exp: Future.',
+            gherkin: `Scenario: Successful payment with valid Visa card
+  Given the customer has items in their cart
+  And is on the payment screen
+  When the customer enters a valid Visa card number
+  And enters a valid expiry date and CVV
+  And clicks "Confirm Payment"
+  Then the payment should be processed within 5 seconds
+  And the order should be confirmed
+  And the customer should receive an email confirmation
+  And the cart should be cleared`
+          },
+          {
+            id: 'SC-002', category: 'NEGATIVE', title: 'Payment declined — insufficient funds',
+            desc: 'Validate that the system handles a card decline gracefully and allows the user to try a different payment method.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Customer has a card that will be declined (test card for insufficient funds).',
+              'Customer is on the payment screen with items in cart.'
+            ],
+            gherkin: `Scenario: Payment declined — insufficient funds
+  Given the customer is on the payment screen
+  And enters a card configured to return "insufficient funds"
+  When the customer clicks "Confirm Payment"
+  Then the system should display a clear decline message
+  And the cart should remain intact
+  And the customer should be offered alternative payment options
+  And no order should be created`
+          },
+          {
+            id: 'SC-003', category: 'SECURITY', title: 'Card data is not stored after payment',
+            desc: 'Validate that full card numbers and CVV are never stored in the system database after transaction processing.',
+            priority: 'CRITICAL', automation: 'AUTOMATION_RECOMMENDED',
+            prerequisites: [
+              'Access to the database or API to inspect stored payment records.',
+              'A test payment has been completed successfully.'
+            ],
+            gherkin: `Scenario: Card data is not stored after payment
+  Given a successful test payment has been completed
+  When the payment record is inspected in the system
+  Then the full card number (PAN) should NOT be stored
+  And the CVV should NOT be stored
+  And only the masked last 4 digits and card brand should be visible`
+          },
+          {
+            id: 'SC-004', category: 'BOUNDARY', title: 'Payment processing at the 5-second timeout boundary',
+            desc: 'Validate system behavior when payment gateway response time is near the defined 5-second SLA.',
+            priority: 'HIGH', automation: 'AUTOMATION_RECOMMENDED',
+            prerequisites: [
+              'Ability to simulate gateway latency (e.g., test environment delay parameter).',
+              'Customer is on the payment screen.'
+            ],
+            gherkin: `Scenario: Payment at the 5-second timeout boundary
+  Given the payment gateway is configured to respond in 4.9 seconds
+  When the customer submits a payment
+  Then the payment should be processed successfully
+  And the customer should not see a timeout error
+
+  Scenario: Payment exceeds the 5-second timeout
+  Given the payment gateway is configured to respond in 6 seconds
+  When the customer submits a payment
+  Then the system should display a timeout error
+  And the customer should be advised to check their bank statement before retrying`
+          }
+        ],
+        edgeCases: [
+          { value: 'expired card (past month/year)', cat: 'INVALID_INPUT', reason: 'Client and server-side validation must reject expired cards before reaching the payment gateway.' },
+          { value: 'invalid CVV (wrong length)', cat: 'FORMAT', reason: 'CVV must be exactly 3 digits (4 for Amex). Invalid lengths must be caught by form validation.' },
+          { value: 'card number with spaces/dashes', cat: 'FORMAT', reason: 'Input formatting must strip non-numeric characters before processing or guide the user clearly.' },
+          { value: 'user closes browser during 3DS redirect', cat: 'UNEXPECTED_INPUT', reason: 'The order must not be created if 3DS is not completed. The cart must remain intact.' },
+          { value: 'double-click on submit button', cat: 'UNEXPECTED_INPUT', reason: 'Multiple form submissions must be prevented — disable the button after first click or use idempotency.' },
+          { value: 'transaction amount = 0.00', cat: 'BOUNDARY', reason: 'Zero-value transactions must be handled explicitly — either rejected or routed to a free-checkout flow.' },
+          { value: 'network loss between gateway response and order creation', cat: 'UNEXPECTED_INPUT', reason: 'If payment succeeds but the order creation fails, the customer is charged without an order — this must be handled with a compensation mechanism.' }
+        ],
+        automation: {
+          priority: 'High',
+          count: '3 / 4',
+          recs: [
+            'SC-001 (Happy path): Automate end-to-end with Playwright using sandbox test cards — validate confirmation email with an email testing API.',
+            'SC-002 (Card declined): Automate using the gateway sandbox decline codes — verify UI error messages and cart preservation.',
+            'SC-004 (Timeout boundary): Automate at API level using mock server with configurable delays to test timeout handling without real network latency.',
+            'SC-003 (Data storage): Recommend as a security audit test; automate with a database inspection step post-payment in the CI pipeline.'
+          ]
+        },
+        gherkinFull: `Feature: Credit Card Payment
+
+  As a customer
+  I want to pay for my order using a credit card
+  So that I can complete my purchase quickly and securely
+
+  Background:
+    Given the customer has items in their shopping cart
+    And the payment gateway sandbox is operational
+
+  Scenario: Successful payment with valid Visa card
+    Given the customer is on the payment screen
+    When the customer enters a valid Visa card number
+    And enters a valid expiry date and CVV
+    And clicks "Confirm Payment"
+    Then the payment should be processed within 5 seconds
+    And the order should be confirmed
+    And the customer should receive an email confirmation
+    And the cart should be cleared
+
+  Scenario: Payment declined — insufficient funds
+    Given the customer is on the payment screen
+    And enters a card configured to return "insufficient funds"
+    When the customer clicks "Confirm Payment"
+    Then the system should display a clear decline message
+    And the cart should remain intact
+    And the customer should be offered alternative payment options
+    And no order should be created
+
+  Scenario: Card data is not stored after payment
+    Given a successful test payment has been completed
+    When the payment record is inspected in the system
+    Then the full card number (PAN) should NOT be stored
+    And the CVV should NOT be stored
+    And only the masked last 4 digits and card brand should be visible
+
+  Scenario Outline: Payment at the timeout boundary
+    Given the gateway responds in <delay> seconds
+    When the customer submits a payment
+    Then the result should be <outcome>
+
+    Examples:
+      | delay | outcome                        |
+      | 4.9   | payment processed successfully |
+      | 6.0   | timeout error displayed        |`
+      },
+
+      // ── EXAMPLE 2: Update Delivery Address ────────────────────────────────
+      {
+        risk: {
+          score: 16,
+          level: 'CRITICAL',
+          impact: 5,
+          probability: 4,
+          complexity: 4,
+          detectability: 3,
+          rationale: 'Modifying delivery addresses on in-flight orders involves time-sensitive state changes, logistics integrations, and concurrent processing risks. A missed update can result in misdelivery and customer loss.'
+        },
+        hiddenRisks: [
+          {
+            title: 'Concurrent dispatch during address update',
+            desc: 'The order may transition to "Dispatched" status while the customer is submitting an address change. Without proper locking, the new address may be saved to a record that has already been sent to the courier.',
+            suggested: 'Simulate an address update request at the exact moment the order status changes to Dispatched and verify which address is used by logistics.',
+            severity: 'CRITICAL'
+          },
+          {
+            title: 'Logistics integration notification failure',
+            desc: 'The system may successfully update the address in the database but fail to notify the logistics provider, causing the courier to use the original address.',
+            suggested: 'Mock a failure on the logistics notification webhook and verify the system rolls back the address change or queues a retry.',
+            severity: 'HIGH'
+          },
+          {
+            title: 'Unauthorized address change',
+            desc: 'Another authenticated user may be able to change the address of an order that does not belong to them if authorization checks rely only on session state without order ownership validation.',
+            suggested: 'Attempt to change the address of Order A while authenticated as User B (who owns Order B) and confirm access is denied.',
+            severity: 'CRITICAL'
+          },
+          {
+            title: 'Address history not preserved',
+            desc: 'If previous addresses are not kept in the order history, there is no audit trail for disputes or misdelivery investigations.',
+            suggested: 'Change the address and inspect the order record to confirm the previous address is stored in a history or audit log.',
+            severity: 'MEDIUM'
+          }
+        ],
+        scenarios: [
+          {
+            id: 'SC-001', category: 'POSITIVE', title: 'Successful address update while order is Processing',
+            desc: 'Validate that a customer can change their delivery address while the order is in Processing status and that logistics is notified.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Customer has a placed order with status "Processing".',
+              'Customer is authenticated and viewing their order details.',
+              'Logistics integration service is operational.',
+              'New address is valid and within the supported delivery zone.'
+            ],
+            gherkin: `Scenario: Successful address update while order is Processing
+  Given the customer is viewing an order with status "Processing"
+  And the customer is authenticated as the order owner
+  When the customer clicks "Update Delivery Address"
+  And enters a new valid delivery address
+  And confirms the change
+  Then the order record should be updated with the new address
+  And the previous address should be preserved in the order history
+  And the logistics provider should be notified of the address change
+  And the customer should receive an email confirmation of the update`
+          },
+          {
+            id: 'SC-002', category: 'NEGATIVE', title: 'Address change rejected for Dispatched order',
+            desc: 'Validate that once an order status moves to Dispatched, address changes are blocked and the customer is informed.',
+            priority: 'HIGH', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Order has status "Dispatched".',
+              'Customer is authenticated and on the order details page.'
+            ],
+            gherkin: `Scenario: Address change rejected for Dispatched order
+  Given the customer has an order with status "Dispatched"
+  When the customer attempts to update the delivery address
+  Then the system should display an error message indicating the order has already been dispatched
+  And the "Update Address" option should be disabled or hidden
+  And the address should NOT be changed`
+          },
+          {
+            id: 'SC-003', category: 'SECURITY', title: 'Unauthorized user cannot change another customer\'s address',
+            desc: 'Validate that order ownership is verified server-side and that a logged-in user cannot modify orders belonging to other customers.',
+            priority: 'CRITICAL', automation: 'AUTOMATION_HIGHLY_RECOMMENDED',
+            prerequisites: [
+              'Two different user accounts exist (User A and User B).',
+              'User A has an order in "Processing" status.',
+              'Tester is authenticated as User B.'
+            ],
+            gherkin: `Scenario: Unauthorized user cannot change another customer's address
+  Given the tester is authenticated as User B
+  And User A has an order with ID "ORD-001" in "Processing" status
+  When the tester attempts to update the delivery address for order "ORD-001"
+  Then the system should return an authorization error
+  And the address should NOT be changed
+  And no notification should be sent to the logistics provider`
+          },
+          {
+            id: 'SC-004', category: 'INTEGRATION', title: 'Logistics notification fails — address change is rolled back',
+            desc: 'Validate that if the logistics integration is unavailable, the address change is rolled back and the customer is notified.',
+            priority: 'HIGH', automation: 'AUTOMATION_RECOMMENDED',
+            prerequisites: [
+              'Logistics notification service is mocked to return a failure response.',
+              'Order is in "Processing" status.',
+              'Customer is authenticated.'
+            ],
+            gherkin: `Scenario: Logistics notification fails — address change is rolled back
+  Given the logistics integration service returns a 503 error
+  And the customer submits a valid address change for a "Processing" order
+  When the notification to logistics fails
+  Then the system should roll back the address change
+  And the original address should remain on the order
+  And the customer should see a clear error message
+  And a retry should be queued for the logistics notification`
+          }
+        ],
+        edgeCases: [
+          { value: 'address in unsupported delivery zone', cat: 'INVALID_INPUT', reason: 'The system must validate the new address against the supported delivery zones before accepting the change.' },
+          { value: 'empty street or postal code', cat: 'INVALID_INPUT', reason: 'Required fields must be validated client and server-side before the change is submitted.' },
+          { value: 'address change at the exact moment of dispatch', cat: 'BOUNDARY', reason: 'Race condition — the system must handle concurrent dispatch and address update atomically.' },
+          { value: 'special characters in address (e.g. Ñ, é, ü)', cat: 'FORMAT', reason: 'International addresses must be stored and transmitted correctly to avoid encoding issues with the courier system.' },
+          { value: 'session expires during address form submission', cat: 'UNEXPECTED_INPUT', reason: 'If the session expires before submission completes, the change must not be partially applied.' },
+          { value: 'maximum address length exceeded', cat: 'BOUNDARY', reason: 'Very long address strings must be truncated or rejected before causing database or logistics API errors.' },
+          { value: 'duplicate address submission (same as current)', cat: 'UNEXPECTED_INPUT', reason: 'Submitting the same address currently on file should either be a no-op or display a clear message that nothing changed.' }
+        ],
+        automation: {
+          priority: 'High',
+          count: '3 / 4',
+          recs: [
+            'SC-001 (Happy path): Automate end-to-end with Playwright — place an order, navigate to order details, update the address, and verify the logistics notification via a mock webhook.',
+            'SC-002 (Dispatched order): Automate by updating the order status directly in the test database and verifying the UI blocks address changes.',
+            'SC-003 (Authorization): Automate at API level — inject the request with User B session token targeting User A\'s order ID and assert 403 response.',
+            'SC-004 (Integration failure): Recommend mock server (e.g. WireMock) to simulate logistics failure; verify rollback in the test database post-submission.'
+          ]
+        },
+        gherkinFull: `Feature: Update Delivery Address Before Dispatch
+
+  As a customer
+  I want to update my delivery address before my order is dispatched
+  So that my items arrive at the correct location
+
+  Background:
+    Given the customer is authenticated
+    And the logistics integration service is operational
+
+  Scenario: Successful address update while order is Processing
+    Given the customer is viewing an order with status "Processing"
+    And the customer is authenticated as the order owner
+    When the customer clicks "Update Delivery Address"
+    And enters a new valid delivery address
+    And confirms the change
+    Then the order record should be updated with the new address
+    And the previous address should be preserved in the order history
+    And the logistics provider should be notified of the address change
+    And the customer should receive an email confirmation
+
+  Scenario: Address change rejected for Dispatched order
+    Given the customer has an order with status "Dispatched"
+    When the customer attempts to update the delivery address
+    Then the system should display an error message indicating the order has already been dispatched
+    And the "Update Address" option should be disabled or hidden
+    And the address should NOT be changed
+
+  Scenario: Unauthorized user cannot change another customer's address
+    Given the tester is authenticated as User B
+    And User A has an order "ORD-001" in "Processing" status
+    When the tester attempts to update the address for order "ORD-001"
+    Then the system should return an authorization error
+    And the address should NOT be changed
+
+  Scenario: Logistics notification fails — address change is rolled back
+    Given the logistics integration service returns a 503 error
+    When the customer submits a valid address change for a "Processing" order
+    Then the system should roll back the address change
+    And the customer should see a clear error message
+    And a retry should be queued`
+      }
+    ];
+
+    /* ------------------------------------------
+       STATE
+    ------------------------------------------ */
+    let currentExampleIndex = 0;
+    let currentData = null;
+
+    /* ------------------------------------------
+       UTILS
+    ------------------------------------------ */
+    function $(id) { return document.getElementById(id); }
+
+    function el(tag, attrs = {}, ...children) {
+      const e = document.createElement(tag);
+      for (const [k, v] of Object.entries(attrs)) {
+        if (k === 'className') e.className = v;
+        else if (k === 'innerHTML') e.innerHTML = v;
+        else e.setAttribute(k, v);
+      }
+      for (const c of children) {
+        if (typeof c === 'string') e.appendChild(document.createTextNode(c));
+        else if (c) e.appendChild(c);
+      }
+      return e;
+    }
+
+    /* ------------------------------------------
+       LOAD EXAMPLE
+    ------------------------------------------ */
+    function loadExample(index) {
+      currentExampleIndex = index;
+      $('requirement').value = EXAMPLES[index];
+      $('results').style.display = 'none';
+      $('loading-state').style.display = 'none';
+      resetSteps();
+    }
+
+    /* ------------------------------------------
+       RUN ANALYSIS (simulated)
+    ------------------------------------------ */
+    function runAnalysis() {
+      const req = $('requirement').value.trim();
+      if (req.length < 20) {
+        alert('Please enter a requirement with at least 20 characters.');
+        return;
+      }
+
+      // Determine which mock dataset to use
+      let dataIndex = 0;
+      if (req.includes('cart') || req.includes('credit') || req.includes('payment') || req.includes('Visa')) {
+        dataIndex = 1;
+      } else if (req.includes('address') || req.includes('dispatch') || req.includes('shipping') || req.includes('entrega')) {
+        dataIndex = 2;
+      } else if (req.includes('password') || req.includes('recovery') || req.includes('senha')) {
+        dataIndex = 0;
+      } else {
+        dataIndex = currentExampleIndex < MOCK_DATA.length ? currentExampleIndex : 0;
+      }
+
+      currentData = MOCK_DATA[dataIndex];
+
+      $('results').style.display = 'none';
+      $('loading-state').style.display = 'block';
+      $('analyze-btn').disabled = true;
+      resetSteps();
+
+      // Scroll to loading
+      $('loading-state').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+      // Simulate step-by-step progress
+      const delays = [400, 900, 1600, 2300, 2900];
+      delays.forEach((delay, i) => {
+        setTimeout(() => activateStep(i), delay);
+      });
+
+      setTimeout(() => {
+        $('loading-state').style.display = 'none';
+        $('analyze-btn').disabled = false;
+        renderResults(currentData);
+        $('results').style.display = 'block';
+        setTimeout(() => {
+          $('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }, 3500);
+    }
+
+    function resetSteps() {
+      for (let i = 0; i < 5; i++) {
+        const s = $(`step-${i}`);
+        s.classList.remove('active', 'done');
+        s.querySelector('.step-icon').innerHTML = '⬜';
+      }
+    }
+
+    function activateStep(i) {
+      if (i > 0) {
+        const prev = $(`step-${i - 1}`);
+        prev.classList.remove('active');
+        prev.classList.add('done');
+        prev.querySelector('.step-icon').innerHTML = '✅';
+      }
+      const s = $(`step-${i}`);
+      s.classList.add('active');
+      s.querySelector('.step-icon').innerHTML = '<div class="spinner"></div>';
+
+      // Complete last step
+      if (i === 4) {
+        setTimeout(() => {
+          s.classList.remove('active');
+          s.classList.add('done');
+          s.querySelector('.step-icon').innerHTML = '✅';
+        }, 500);
+      }
+    }
+
+    /* ------------------------------------------
+       RENDER RESULTS
+    ------------------------------------------ */
+    function renderResults(data) {
+      renderRisk(data.risk);
+      renderHiddenRisks(data.hiddenRisks);
+      renderScenarios(data.scenarios);
+      renderEdgeCases(data.edgeCases);
+      renderAutomation(data.automation);
+      renderGherkin(data.gherkinFull);
+    }
+
+    /* ── RISK ── */
+    function renderRisk(risk) {
+      const levelColors = {
+        LOW: 'var(--risk-low)',
+        MEDIUM: 'var(--risk-medium)',
+        HIGH: 'var(--risk-high)',
+        CRITICAL: 'var(--risk-critical)'
+      };
+
+      const scoreEl = $('r-score');
+      scoreEl.textContent = risk.score;
+      scoreEl.style.color = levelColors[risk.level] || 'var(--text-primary)';
+
+      const levelEl = $('r-level');
+      levelEl.textContent = risk.level;
+      levelEl.className = `risk-level-badge ${risk.level}`;
+
+      $('r-rationale').textContent = risk.rationale;
+
+      const factorsEl = $('risk-factors');
+      factorsEl.innerHTML = '';
+
+      const factors = [
+        { name: 'Impact', value: risk.impact },
+        { name: 'Probability', value: risk.probability },
+        { name: 'Complexity', value: risk.complexity },
+        { name: 'Detectability', value: risk.detectability }
+      ];
+
+      factors.forEach(f => {
+        const pct = (f.value / 5) * 100;
+        factorsEl.insertAdjacentHTML('beforeend', `
+          <div class="risk-factor">
+            <div class="risk-factor-name">${f.name}</div>
+            <div class="risk-bar-track">
+              <div class="risk-bar-fill" style="width:${pct}%"></div>
+            </div>
+            <div class="risk-bar-value">${f.value} / 5</div>
+          </div>
+        `);
+      });
+    }
+
+    /* ── HIDDEN RISKS ── */
+    function renderHiddenRisks(risks) {
+      const container = $('hidden-risks-list');
+      container.innerHTML = '';
+
+      const sevClass = { CRITICAL: 'sev-critical', HIGH: 'sev-high', MEDIUM: 'sev-medium', LOW: 'sev-low' };
+
+      risks.forEach(r => {
+        const item = el('div', { className: 'risk-item', role: 'listitem' });
+        item.setAttribute('aria-expanded', 'false');
+        item.innerHTML = `
+          <div class="risk-item-header">
+            <div class="risk-item-title">${r.title}</div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <span class="risk-severity ${sevClass[r.severity] || ''}">${r.severity}</span>
+              <span class="chevron" aria-hidden="true">▾</span>
+            </div>
+          </div>
+          <div class="risk-item-body">
+            <p class="risk-item-desc">${r.desc}</p>
+            <div class="risk-suggested"><strong>Suggested test:</strong> ${r.suggested}</div>
+          </div>
+        `;
+        item.addEventListener('click', () => {
+          item.classList.toggle('open');
+          item.setAttribute('aria-expanded', item.classList.contains('open'));
+        });
+        container.appendChild(item);
+      });
+    }
+
+    function renderScenarios(scenarios) {
+      const container = $('scenario-cards');
+      container.innerHTML = '';
+
+      const catBadge = {
+        POSITIVE:    'badge-positive',
+        NEGATIVE:    'badge-negative',
+        BOUNDARY:    'badge-boundary',
+        SECURITY:    'badge-security',
+        INTEGRATION: 'badge-integration',
+        REGRESSION:  'badge-regression'
+      };
+
+      scenarios.forEach(sc => {
+        const prereqItems = sc.prerequisites.map(p => `<li>${p}</li>`).join('');
+        const typeStr = sc.type ? ` · ${sc.type}` : '';
+        const testDataStr = (sc.testData && sc.testData !== "N/A") 
+          ? `<div class="scenario-section"><h4>Dados de teste</h4><div class="test-data-block">${escapeHtml(sc.testData)}</div></div>` 
+          : '';
+
+        const card = el('article', { className: 'scenario-card', role: 'listitem' });
+        card.innerHTML = `
+          <div class="scenario-card-top">
+            <div class="scenario-meta">
+              <span class="scenario-id-cat">${sc.id} · ${sc.category}${typeStr}</span>
+              <div class="scenario-badges">
+                <span class="badge-sc ${catBadge[sc.category] || ''}">${sc.category}</span>
+                <span class="badge-sc badge-auto">${sc.automation.replace(/_/g, ' ')}</span>
+              </div>
+            </div>
+            <div class="scenario-title">${sc.title}</div>
+            <div class="scenario-desc">${sc.desc}</div>
+          </div>
+          <div class="scenario-card-bottom">
+            <div class="scenario-section">
+              <h4>Prerequisites</h4>
+              <ul>${prereqItems}</ul>
+            </div>
+            ${testDataStr}
+            <div class="gherkin-wrapper">
+              <div class="gherkin-header">
+                <span>Gherkin</span>
+                <button class="copy-btn" onclick="copyGherkin(this, \`${escapeHtml(sc.gherkin).replace(/`/g, '\\`')}\`)">Copy Gherkin</button>
+              </div>
+              <pre>${escapeHtml(sc.gherkin)}</pre>
+            </div>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.copyGherkin = function(btn, text) {
+      navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.textContent = 'Copy Gherkin';
+        btn.classList.remove('copied');
+      }, 2000);
+    };
+
+    /* ── UPLOAD MOCK ── */
+    const uploadZone = $('uploadZone');
+    const fileInput = $('fileInput');
+    const uploadLabel = $('uploadLabel');
+    const fileLoaded = $('fileLoaded');
+    const fileName = $('fileName');
+
+    if (uploadZone) {
+      uploadZone.addEventListener('dragover', (e) => { e.preventDefault(); uploadZone.classList.add('drag-active'); });
+      uploadZone.addEventListener('dragleave', (e) => { e.preventDefault(); uploadZone.classList.remove('drag-active'); });
+      uploadZone.addEventListener('drop', (e) => {
+        e.preventDefault(); uploadZone.classList.remove('drag-active');
+        if (e.dataTransfer.files && e.dataTransfer.files[0]) handleMockUpload(e.dataTransfer.files[0]);
+      });
+      fileInput.addEventListener('change', (e) => {
+        if (e.target.files && e.target.files[0]) handleMockUpload(e.target.files[0]);
+      });
+    }
+
+    function handleMockUpload(file) {
+      uploadLabel.style.display = 'none';
+      fileLoaded.style.display = 'flex';
+      fileName.textContent = '📄 ' + file.name;
+      $('requirement').value = "Texto extraído do documento: " + file.name + "\n\n" + MOCK_DATA[0].req;
+    }
+
+    window.removeFile = function() {
+      uploadLabel.style.display = 'block';
+      fileLoaded.style.display = 'none';
+      fileInput.value = '';
+      $('requirement').value = '';
+    };
+
+    /* ── EDGE CASES ── */
+    function renderEdgeCases(edgeCases) {
+      const container = $('edge-cases-grid');
+      container.innerHTML = '';
+      edgeCases.forEach(e => {
+        container.insertAdjacentHTML('beforeend', `
+          <div class="edge-item" role="listitem">
+            <div class="edge-value">${escapeHtml(e.value)}</div>
+            <div class="edge-cat">${e.cat.replace(/_/g, ' ')}</div>
+            <div class="edge-reason">${e.reason}</div>
+          </div>
+        `);
+      });
+    }
+
+    /* ── AUTOMATION ── */
+    function renderAutomation(auto) {
+      $('auto-priority').textContent = auto.priority;
+      $('auto-count').textContent = auto.count;
+
+      const container = $('automation-recs');
+      container.innerHTML = '';
+      auto.recs.forEach(r => {
+        container.insertAdjacentHTML('beforeend', `
+          <div class="automation-rec-item">
+            <div class="auto-dot" aria-hidden="true"></div>
+            <span>${r}</span>
+          </div>
+        `);
+      });
+    }
+
+    /* ── GHERKIN ── */
+    function renderGherkin(text) {
+      $('gherkin-full').textContent = text;
+    }
+
+    /* ------------------------------------------
+       COPY GHERKIN
+    ------------------------------------------ */
+    function copyGherkin() {
+      if (!currentData) return;
+      const text = currentData.gherkinFull;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => showCopied());
+      } else {
+        // Fallback for older browsers
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        showCopied();
+      }
+    }
+
+    function showCopied() {
+      const btn = $('copy-btn');
+      btn.textContent = '✓ Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => {
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true">
+            <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+            <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+          </svg>
+          Copy Gherkin`;
+        btn.classList.remove('copied');
+      }, 2000);
+    }
+
+    /* ------------------------------------------
+       UTILS
+    ------------------------------------------ */
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* ------------------------------------------
+       INIT — load first example on page load
+    ------------------------------------------ */
+    loadExample(0);
+  </script>
+
+</body>
+</html>

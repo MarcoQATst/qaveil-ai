@@ -14,6 +14,18 @@ describe("POST /api/analyses", () => {
     expect(body.analysis.risk.score).toBeGreaterThan(0);
     expect(body.analysis.scenarios.length).toBeGreaterThanOrEqual(5);
     expect(body.analysis.scenarios.some((scenario: { category: string }) => scenario.category === "SECURITY")).toBe(true);
+
+    // Verify that every scenario contains the new mandatory fields
+    for (const scenario of body.analysis.scenarios) {
+      expect(Array.isArray(scenario.prerequisites)).toBe(true);
+      expect(typeof scenario.gherkin).toBe("string");
+      expect(scenario.gherkin.length).toBeGreaterThan(0);
+      expect(typeof scenario.type).toBe("string");
+      // testData is optional in Zod but usually present as a string
+      if (scenario.testData !== undefined) {
+        expect(typeof scenario.testData).toBe("string");
+      }
+    }
   });
 
   it("rejects a too-short requirement", async () => {

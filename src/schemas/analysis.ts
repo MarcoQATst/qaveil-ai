@@ -33,8 +33,12 @@ export const analysisResultSchema = z.object({
   scenarios: z.array(z.object({
     id: z.string(),
     title: z.string(),
+    type: z.string(),
     category: z.enum(["POSITIVE", "NEGATIVE", "BOUNDARY", "SECURITY", "INTEGRATION", "REGRESSION"]),
     description: z.string(),
+    prerequisites: z.array(z.string()),
+    testData: z.string().optional(),
+    gherkin: z.string(),
     priority: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
     expectedBehavior: z.string(),
     automation: z.enum(["MANUAL", "AUTOMATION_RECOMMENDED", "AUTOMATION_HIGHLY_RECOMMENDED"]),
