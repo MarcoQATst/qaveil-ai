@@ -8,9 +8,15 @@ datasource db {
 }
 
 model Analysis {
-  id        String   @id @default(cuid())
-  userStory String?
-  requirement String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String   @id @default(cuid())
+  locale            String   @default("pt")
+  userStory         String?
+  requirement       String
+  additionalContext String?
+  riskScore         Int
+  result            Json
+  testCases         Json
+  gherkin           Json
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }

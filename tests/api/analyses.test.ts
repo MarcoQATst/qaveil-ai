@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { POST } from "../../src/app/api/analyses/route";
+import { GET, POST } from "../../src/app/api/analyses/route";
 
 describe("POST /api/analyses", () => {
   it("returns a validated analysis response", async () => {
@@ -35,5 +35,11 @@ describe("POST /api/analyses", () => {
       body: JSON.stringify({ requirement: "Short" }),
     }));
     expect(response.status).toBe(400);
+  });
+
+  it("returns an empty history when persistence is not configured", async () => {
+    const response = await GET();
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ analyses: [] });
   });
 });

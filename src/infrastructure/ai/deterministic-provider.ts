@@ -58,7 +58,7 @@ export class DeterministicAIProvider implements AIProvider {
       ],
       scenarios: [
         {
-          id: "SC-001",
+          id: "TC-001",
           title: portuguese ? "Executar o fluxo com dados válidos" : "Complete the flow with valid data",
           type: "Functional",
           category: "POSITIVE",
@@ -75,7 +75,7 @@ export class DeterministicAIProvider implements AIProvider {
           automation: "AUTOMATION_HIGHLY_RECOMMENDED"
         },
         {
-          id: "SC-002",
+          id: "TC-002",
           title: portuguese ? "Rejeitar dados inválidos" : "Reject invalid input",
           type: "Functional",
           category: "NEGATIVE",
@@ -92,7 +92,7 @@ export class DeterministicAIProvider implements AIProvider {
           automation: "AUTOMATION_HIGHLY_RECOMMENDED"
         },
         {
-          id: "SC-003",
+          id: "TC-003",
           title: portuguese ? "Validar valores de limite" : "Validate boundary values",
           type: "Functional",
           category: "BOUNDARY",
@@ -109,7 +109,7 @@ export class DeterministicAIProvider implements AIProvider {
           automation: "AUTOMATION_RECOMMENDED"
         },
         {
-          id: "SC-004",
+          id: "TC-004",
           title: portuguese ? "Bloquear acesso não autorizado" : "Block unauthorized access",
           type: "Security",
           category: "SECURITY",
@@ -126,7 +126,7 @@ export class DeterministicAIProvider implements AIProvider {
           automation: "AUTOMATION_HIGHLY_RECOMMENDED"
         },
         ...(mentionsIntegration ? [{
-          id: "SC-005",
+          id: "TC-005",
           title: portuguese ? "Tratar falha da integração" : "Handle integration failure",
           type: "Integration",
           category: "INTEGRATION" as const,
@@ -143,7 +143,7 @@ export class DeterministicAIProvider implements AIProvider {
           automation: "AUTOMATION_RECOMMENDED" as const
         }] : []),
         {
-          id: "SC-006",
+          id: "TC-006",
           title: portuguese ? "Evitar regressão de dados existentes" : "Avoid regression on existing data",
           type: "Regression",
           category: "REGRESSION",

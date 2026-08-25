@@ -50,8 +50,9 @@ The Compose stack starts the app and PostgreSQL. The Codex process may not have 
 ## Environment
 
 - `DATABASE_URL`: PostgreSQL connection string
-- `AI_PROVIDER`: `deterministic` for the current MVP
-- `OPENAI_API_KEY`: reserved for a future LLM provider; never commit it
+- `AI_PROVIDER`: `deterministic` (local) or `gemini`
+- `GEMINI_API_KEY`: required only when `AI_PROVIDER=gemini`; it is read exclusively on the server
+- `DATABASE_URL`: enables persisted analysis history. After configuring it, run `npx prisma db push` to apply the local schema.
 
 ## AI safety
 
