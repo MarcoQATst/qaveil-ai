@@ -1,6 +1,5 @@
 import type { AIProvider } from "../../domain/ai/provider";
 import type { RequirementAnalysis, RequirementInput } from "../../schemas/analysis";
-import { calculateRiskScore, classifyRisk } from "../../domain/qa/risk";
 
 const actorPattern = /\b(?:as an?|as the)\s+([^,.]+?)(?=,|\s+i want|\s+i need|$)/i;
 
@@ -16,11 +15,50 @@ export class DeterministicAIProvider implements AIProvider {
     const mentionsAuth = /password|login|account|access|auth/i.test(source);
     const portuguese = input.locale === "pt";
     const mentionsOrder = /order|shipping|delivery|address|pedido|entrega|endereço/i.test(source);
-    const score = calculateRiskScore({ impact: mentionsOrder || mentionsAuth ? 5 : 3, probability: mentionsIntegration ? 4 : 3, complexity: mentionsIntegration || mentionsOrder ? 4 : 2, detectability: 3 });
-    const level = classifyRisk(score);
+    // Individual factor scores — total and level are computed by the Zod schema .transform()
+    const impactScore = mentionsOrder || mentionsAuth ? 4 : 2;
+    const probabilityScore = mentionsIntegration ? 3 : 2;
+    const complexityScore = mentionsIntegration || mentionsOrder ? 3 : 2;
+    const detectabilityScore = 3;
+    const score = impactScore + probabilityScore + complexityScore + detectabilityScore;
+    const level = score >= 16 ? "CRITICAL" as const : score >= 11 ? "HIGH" as const : score >= 6 ? "MEDIUM" as const : "LOW" as const;
 
     return {
+      completeness: {
+        status: "GOOD",
+        score: 85,
+        rationale: portuguese ? "Requisito mockado de forma determinista com nível de detalhamento suficiente." : "Requirement mocked deterministically with sufficient detail level.",
+      },
       summary: portuguese ? `O requisito solicita que ${actor} ${input.requirement.replace(/\.$/, "").toLowerCase()}.` : `The requirement asks ${actor} to ${input.requirement.replace(/\.$/, "").toLowerCase()}.`,
+      requirementFacts: input.acceptanceCriteria
+        ? input.acceptanceCriteria.split(/\n|;/).map((item) => item.trim()).filter(Boolean)
+        : [portuguese ? "Nenhum critério de aceite explícito foi fornecido." : "No explicit acceptance criteria were provided."],
+      inferredRisks: [
+        portuguese ? "Inferência QA: Requisições concorrentes podem gerar estados inconsistentes." : "QA Inference: Concurrent requests may generate inconsistent states.",
+        ...(mentionsIntegration ? [portuguese ? "Inferência QA: Integração pode falhar silenciosamente sem contrato de erro." : "QA Inference: Integration may fail silently without an error contract."] : []),
+      ],
+      requirementGaps: [
+        portuguese ? "Lacuna do requisito: Regras de validação e valores de limite não definidos." : "Requirement gap: Validation rules and boundary values not defined.",
+        portuguese ? "Lacuna do requisito: Comportamento esperado para retry e requisições concorrentes não definido." : "Requirement gap: Expected behavior for retries and concurrent requests not defined.",
+        ...(mentionsAuth ? [portuguese ? "Lacuna do requisito: Requisitos de autenticação, autorização e expiração de token não especificados." : "Requirement gap: Authentication, authorization, and token expiry requirements not specified."] : []),
+      ],
+      contradictions: [],
+      qaImpact: {
+        criticalAreas: [
+          portuguese ? "Validação de entradas do usuário" : "User input validation",
+          ...(mentionsAuth ? [portuguese ? "Controle de acesso e autorização" : "Access control and authorization"] : []),
+          ...(mentionsIntegration ? [portuguese ? "Resiliência da integração externa" : "External integration resilience"] : []),
+        ],
+        recommendedTesting: [
+          portuguese ? "Testes funcionais do fluxo principal" : "Functional tests for the happy path",
+          portuguese ? "Testes de regressão para dados existentes" : "Regression tests for existing data",
+          ...(mentionsIntegration ? [portuguese ? "Testes de contrato da integração" : "Integration contract tests"] : []),
+        ],
+        regressionAreas: [
+          portuguese ? "Fluxos relacionados ao ator principal" : "Flows related to the main actor",
+        ],
+        blockers: [],
+      },
       actors: [actor],
       businessRules: input.acceptanceCriteria
         ? input.acceptanceCriteria.split(/\n|;/).map((item) => item.trim()).filter(Boolean)
@@ -28,7 +66,14 @@ export class DeterministicAIProvider implements AIProvider {
       dependencies: mentionsIntegration ? [portuguese ? "Uma integração está implícita e precisa de um contrato para falhas." : "An external or internal integration is implied and needs a failure contract."] : [],
       preconditions: [portuguese ? "O ator possui a permissão e o estado de conta necessários para iniciar a ação." : "The actor has the required account state and permission to initiate the action."],
       postconditions: [portuguese ? "A alteração solicitada é persistida e visível na jornada relevante." : "The requested change is persisted and visible in the relevant user journey."],
-      ambiguities: [portuguese ? "Os retornos de sucesso e erro não foram definidos explicitamente." : "Success and error feedback are not explicitly defined."],
+      ambiguities: [
+        {
+          term: portuguese ? "Retorno de sucesso/erro" : "Success/error feedback",
+          problem: portuguese ? "Os retornos de sucesso e erro não foram definidos explicitamente." : "Success and error feedback are not explicitly defined.",
+          requiredInformation: portuguese ? "Definir mensagens de sucesso e erro para cada cenário." : "Define success and error messages for each scenario.",
+          questionForPo: portuguese ? "Quais mensagens o usuário deve ver em caso de sucesso ou falha?" : "What messages should the user see on success or failure?",
+        },
+      ],
       missingInformation: [
         portuguese ? "Regras de validação e valores de limite." : "Validation rules and boundary values.",
         portuguese ? "Comportamento esperado para retry, refresh e requisições concorrentes." : "Expected behavior for retries, refresh, and concurrent requests.",
@@ -41,6 +86,22 @@ export class DeterministicAIProvider implements AIProvider {
         ...(mentionsIntegration ? [portuguese ? "Qual o comportamento esperado quando a integração está lenta, indisponível ou retorna dados inválidos?" : "What is the expected behavior when the integration is slow, unavailable, or returns invalid data?"] : []),
       ],
       risk: {
+        impact: {
+          score: mentionsOrder || mentionsAuth ? 4 : 2,
+          rationale: portuguese ? "Impacto baseado na relevância para o fluxo principal do usuário." : "Impact based on relevance to the main user flow.",
+        },
+        probability: {
+          score: mentionsIntegration ? 3 : 2,
+          rationale: portuguese ? "Probabilidade de falha considerando complexidade e dependências." : "Failure probability considering complexity and dependencies.",
+        },
+        complexity: {
+          score: mentionsIntegration || mentionsOrder ? 3 : 2,
+          rationale: portuguese ? "Complexidade baseada nas dependências e regras inferidas." : "Complexity based on dependencies and inferred rules.",
+        },
+        detectability: {
+          score: 3,
+          rationale: portuguese ? "Falhas podem não ser imediatamente visíveis sem monitoramento adequado." : "Failures may not be immediately visible without proper monitoring.",
+        },
         score,
         level,
         rationale: portuguese ? "O score considera impacto no usuário, incertezas de regra e possíveis falhas de integração ou consistência de estado." : "The score considers user impact, rule uncertainty, and potential integration or state-consistency failures.",

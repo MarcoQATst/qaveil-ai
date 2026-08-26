@@ -16,18 +16,35 @@ describe("GeminiAIProvider", () => {
 
   it("successfully calls Gemini API and returns the parsed result", async () => {
     const mockAnalysisResult = {
+      completeness: {
+        status: "GOOD",
+        score: 88,
+        rationale: "Clear reset password requirement with explicit validation rule."
+      },
       summary: "The requirement resets user password.",
+      requirementFacts: ["Only registered emails can request recovery."],
+      inferredRisks: ["QA Inference: Expired tokens could be reused if not invalidated."],
+      requirementGaps: ["Requirement gap: Token expiry duration not defined.", "Requirement gap: Rate limiting for reset requests not specified."],
+      contradictions: [],
+      qaImpact: {
+        criticalAreas: ["Email delivery", "Token security"],
+        recommendedTesting: ["Functional", "Security", "Integration"],
+        regressionAreas: ["Authentication flow", "Email service"],
+        blockers: []
+      },
       actors: ["customer"],
       businessRules: ["Only registered emails can request recovery."],
       dependencies: ["Email service"],
       preconditions: ["User has access to their inbox"],
       postconditions: ["Reset token is generated and emailed"],
       ambiguities: [],
-      missingInformation: [],
-      questionsForPo: [],
+      missingInformation: ["Token expiry duration.", "Rate limiting rules."],
+      questionsForPo: ["How long should the reset token be valid?"],
       risk: {
-        score: 16,
-        level: "CRITICAL",
+        impact: { score: 4, rationale: "Failure blocks user account recovery." },
+        probability: { score: 3, rationale: "Email delivery failures are not uncommon." },
+        complexity: { score: 3, rationale: "Involves email service integration and token lifecycle." },
+        detectability: { score: 3, rationale: "Token reuse failures may not surface immediately." },
         rationale: "Authentication flows have critical security implications.",
         factors: ["security", "email delivery"]
       },
@@ -121,8 +138,11 @@ describe("GeminiAIProvider", () => {
     // Verify the mock return values
     expect(result.summary).toBe("The requirement resets user password.");
     expect(result.actors).toContain("customer");
-    expect(result.risk.level).toBe("CRITICAL");
-    expect(result.risk.score).toBe(16);
+    // Risk score is auto-calculated: 4+3+3+3=13 → HIGH
+    expect(result.risk.score).toBe(13);
+    expect(result.risk.level).toBe("HIGH");
+    expect(result.risk.impact.score).toBe(4);
+    expect(result.risk.detectability.score).toBe(3);
     expect(result.hiddenRisks[0].risk).toBe("Token reuse");
   });
 
@@ -138,8 +158,8 @@ describe("GeminiAIProvider", () => {
     await expect(
       provider.analyzeRequirement({
         locale: "en",
-        requirement: "Valid requirement description that is long enough.",
+        requirement: "Some req",
       })
-    ).rejects.toThrow("Gemini API error (Status 400): API key expired");
+    ).rejects.toThrowError("Gemini API error: Request failed with status 400.");
   });
 });

@@ -9,18 +9,42 @@ export const requirementInputSchema = z.object({
 });
 
 export const analysisResultSchema = z.object({
+  completeness: z.object({
+    status: z.enum(["INCOMPLETE", "WEAK", "ACCEPTABLE", "GOOD", "EXCELLENT"]),
+    score: z.number().int().min(0).max(100),
+    rationale: z.string(),
+  }),
   summary: z.string(),
+  requirementFacts: z.array(z.string()),
+  inferredRisks: z.array(z.string()),
+  requirementGaps: z.array(z.string()),
+  contradictions: z.array(z.string()),
+  qaImpact: z.object({
+    criticalAreas: z.array(z.string()),
+    recommendedTesting: z.array(z.string()),
+    regressionAreas: z.array(z.string()),
+    blockers: z.array(z.string()),
+  }),
   actors: z.array(z.string()),
   businessRules: z.array(z.string()),
   dependencies: z.array(z.string()),
   preconditions: z.array(z.string()),
   postconditions: z.array(z.string()),
-  ambiguities: z.array(z.string()),
+  ambiguities: z.array(z.object({
+    term: z.string(),
+    problem: z.string(),
+    requiredInformation: z.string(),
+    questionForPo: z.string(),
+  })),
   missingInformation: z.array(z.string()),
   questionsForPo: z.array(z.string()),
   risk: z.object({
-    score: z.number().int().min(0).max(20),
-    level: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]),
+    impact: z.object({ score: z.number().int().min(0).max(5), rationale: z.string() }),
+    probability: z.object({ score: z.number().int().min(0).max(5), rationale: z.string() }),
+    complexity: z.object({ score: z.number().int().min(0).max(5), rationale: z.string() }),
+    detectability: z.object({ score: z.number().int().min(0).max(5), rationale: z.string() }),
+    score: z.number().int().min(0).max(20).optional().default(0),
+    level: z.enum(["LOW", "MEDIUM", "HIGH", "CRITICAL"]).optional().default("LOW"),
     rationale: z.string(),
     factors: z.array(z.string()),
   }),
@@ -62,6 +86,17 @@ export const analysisResultSchema = z.object({
     regression: z.number().min(0).max(100),
     lowCoverageAreas: z.array(z.string()),
   }),
+}).transform((data) => {
+  const { impact, probability, complexity, detectability } = data.risk;
+  const score = impact.score + probability.score + complexity.score + detectability.score;
+  let level: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL" = "LOW";
+  if (score >= 16) level = "CRITICAL";
+  else if (score >= 11) level = "HIGH";
+  else if (score >= 6) level = "MEDIUM";
+  
+  data.risk.score = score;
+  data.risk.level = level;
+  return data;
 });
 
 export const analysisResponseSchema = z.object({

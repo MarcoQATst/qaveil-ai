@@ -5,21 +5,462 @@ import type { AnalysisResponse } from "../schemas/analysis";
 
 type Locale = "pt" | "en";
 type HistoryItem = { id: string; requirement: string; riskScore: number; riskLevel: string; summary: string; createdAt: string };
-const copy = { pt: { title: "Revele o que seu requisito nao conta.", subtitle: "Transforme requisitos em riscos, perguntas e casos de teste antes que virem defeitos.", requirement: "Requisito", context: "Contexto adicional", analyze: "Analisar requisito", analyzing: "Analisando...", rules: "Regras de negocio", ambiguities: "Ambiguidades", missing: "Informacoes ausentes", questions: "Perguntas para o Product Owner", placeholder: "Como cliente, quero alterar meu endereco de entrega antes que o pedido seja despachado." }, en: { title: "Reveal what your requirements don't tell you.", subtitle: "Turn requirements into risks, questions, and test cases before they become defects.", requirement: "Requirement", context: "Additional context", analyze: "Analyze requirement", analyzing: "Analyzing...", rules: "Business rules", ambiguities: "Ambiguities", missing: "Missing information", questions: "Questions for the Product Owner", placeholder: "As a customer, I want to change my shipping address before my order is dispatched." } } as const;
+
+const copy = {
+  pt: {
+    title: "Revele o que seu requisito nao conta.",
+    subtitle: "Transforme requisitos em riscos, perguntas e casos de teste antes que virem defeitos.",
+    requirement: "Requisito",
+    context: "Contexto adicional",
+    analyze: "Analisar requisito",
+    analyzing: "Analisando...",
+    rules: "Regras de negocio",
+    ambiguities: "Ambiguidades",
+    missing: "Informacoes ausentes",
+    questions: "Perguntas para o Product Owner",
+    placeholder: "Como cliente, quero alterar meu endereco de entrega antes que o pedido seja despachado.",
+    facts: "Fatos do requisito",
+    gaps: "Lacunas",
+    inferredRisks: "Riscos inferidos",
+    contradictions: "Contradicoes",
+    actors: "Atores",
+    preconditions: "Precondições",
+    postconditions: "Poscondições",
+    dependencies: "Dependências",
+    qaImpact: "Impacto no QA",
+    criticalAreas: "Áreas críticas",
+    recommendedTesting: "Testes recomendados",
+    regressionAreas: "Áreas de regressão",
+    blockers: "Bloqueadores",
+    riskBreakdown: "Detalhamento do Risco",
+    impact: "Impacto",
+    probability: "Probabilidade",
+    complexity: "Complexidade",
+    detectability: "Detectabilidade",
+    riskFactors: "Fatores de risco",
+    completeness: "Completude",
+  },
+  en: {
+    title: "Reveal what your requirements don't tell you.",
+    subtitle: "Turn requirements into risks, questions, and test cases before they become defects.",
+    requirement: "Requirement",
+    context: "Additional context",
+    analyze: "Analyze requirement",
+    analyzing: "Analyzing...",
+    rules: "Business rules",
+    ambiguities: "Ambiguities",
+    missing: "Missing information",
+    questions: "Questions for the Product Owner",
+    placeholder: "As a customer, I want to change my shipping address before my order is dispatched.",
+    facts: "Requirement facts",
+    gaps: "Gaps",
+    inferredRisks: "Inferred risks",
+    contradictions: "Contradictions",
+    actors: "Actors",
+    preconditions: "Preconditions",
+    postconditions: "Postconditions",
+    dependencies: "Dependencies",
+    qaImpact: "QA Impact",
+    criticalAreas: "Critical areas",
+    recommendedTesting: "Recommended testing",
+    regressionAreas: "Regression areas",
+    blockers: "Blockers",
+    riskBreakdown: "Risk Breakdown",
+    impact: "Impact",
+    probability: "Probability",
+    complexity: "Complexity",
+    detectability: "Detectability",
+    riskFactors: "Risk factors",
+    completeness: "Completeness",
+  },
+} as const;
 
 export function RequirementAnalyzer() {
-  const [locale, setLocale] = useState<Locale>("pt"); const [requirement, setRequirement] = useState<string>(copy.pt.placeholder); const [additionalContext, setAdditionalContext] = useState("");
-  const [result, setResult] = useState<AnalysisResponse | null>(null); const [error, setError] = useState<string | null>(null); const [loading, setLoading] = useState(false);
-  const [file, setFile] = useState<File | null>(null); const [uploading, setUploading] = useState(false); const [dragging, setDragging] = useState(false); const [history, setHistory] = useState<HistoryItem[] | null>(null); const [screen, setScreen] = useState<"analysis" | "history">("analysis");
+  const [locale, setLocale] = useState<Locale>("pt");
+  const [requirement, setRequirement] = useState<string>(copy.pt.placeholder);
+  const [additionalContext, setAdditionalContext] = useState("");
+  const [result, setResult] = useState<AnalysisResponse | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [dragging, setDragging] = useState(false);
+  const [history, setHistory] = useState<HistoryItem[] | null>(null);
+  const [screen, setScreen] = useState<"analysis" | "history">("analysis");
   const t = copy[locale];
-  const chooseLocale = (next: Locale) => { setLocale(next); setRequirement(copy[next].placeholder); setResult(null); setFile(null); };
-  const upload = async (selected: File) => { const extension = selected.name.split(".").pop()?.toLowerCase(); if (!extension || !["pdf", "docx", "txt", "md"].includes(extension)) return setError("Formato nao suportado. Envie PDF, DOCX, TXT ou MD."); if (!selected.size) return setError("O arquivo esta vazio."); if (selected.size > 5 * 1024 * 1024) return setError("O arquivo excede o limite de 5 MB."); setError(null); setUploading(true); try { const data = new FormData(); data.append("file", selected); const response = await fetch("/api/extract", { method: "POST", body: data }); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Falha ao extrair o documento."); setRequirement(body.text); setFile(selected); } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao enviar o arquivo."); } finally { setUploading(false); } };
-  const loadHistory = async () => { setScreen("history"); setError(null); try { const response = await fetch("/api/analyses"); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Falha ao carregar historico."); setHistory(body.analyses); } catch (cause) { setError(cause instanceof Error ? cause.message : "Falha ao carregar historico."); } };
-  const submit = async (event: React.FormEvent) => { event.preventDefault(); setLoading(true); setError(null); try { const response = await fetch("/api/analyses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ requirement, additionalContext, locale }) }); const body = await response.json(); if (!response.ok) throw new Error(body.error || "Analysis failed."); setResult(body); } catch (cause) { setError(cause instanceof Error ? cause.message : "Analysis failed."); } finally { setLoading(false); } };
-  return <main className="workspace"><aside className="sidebar"><div className="brand">QA<span>Veil</span> <small>AI</small></div><p>WORKSPACE</p><button className={screen === "analysis" ? "active" : ""} onClick={() => setScreen("analysis")}>Nova analise</button><button className={screen === "history" ? "active" : ""} onClick={loadHistory}>Historico</button><small className="provider-status">Provider configurado no servidor</small></aside><section className="surface"><header><p>QUALITY ENGINEERING INTELLIGENCE</p><div className="language"><button className={locale === "pt" ? "selected" : ""} onClick={() => chooseLocale("pt")}>PT</button><button className={locale === "en" ? "selected" : ""} onClick={() => chooseLocale("en")}>EN</button></div></header><div className="content">{screen === "history" ? <History items={history} onBack={() => setScreen("analysis")} /> : <><h1>{t.title}</h1><p className="lead">{t.subtitle}</p><div className="analysis-layout"><form className="input-card" onSubmit={submit}><div className={`upload-zone ${dragging ? "drag-active" : ""}`} onDragOver={(e) => { e.preventDefault(); setDragging(true); }} onDragLeave={() => setDragging(false)} onDrop={(e) => { e.preventDefault(); setDragging(false); const selected = e.dataTransfer.files[0]; if (selected) void upload(selected); }}>{uploading ? <p>Extraindo texto do documento...</p> : file ? <div className="file-loaded"><span>{file.name} <small>({Math.ceil(file.size / 1024)} KB)</small></span><button type="button" onClick={() => { setFile(null); setRequirement(""); }}>Remover</button></div> : <label className="upload-label"><input type="file" accept=".pdf,.docx,.txt,.md" hidden onChange={(e) => { const selected = e.target.files?.[0]; if (selected) void upload(selected); }} /><b>Arraste um documento</b> ou clique para selecionar<br /><small>PDF, DOCX, TXT ou MD · max. 5 MB</small></label>}</div><label htmlFor="requirement">{t.requirement} {file && <small>· texto extraido de {file.name}</small>}</label><textarea id="requirement" value={requirement} onChange={(e) => setRequirement(e.target.value)} rows={8} /><label htmlFor="context">{t.context} <small>(opcional)</small></label><input id="context" value={additionalContext} onChange={(e) => setAdditionalContext(e.target.value)} /><button className="primary" disabled={loading || uploading}>{loading ? t.analyzing : t.analyze}</button></form><Risk result={result} /></div>{error && <p className="error" role="alert">{error}</p>}{result ? <AnalysisResult result={result} t={t} /> : <div className="empty"><b>Analise pronta para comecar</b><p>Riscos, ambiguidades e casos de teste aparecerao aqui.</p></div>}</>}</div></section></main>;
+
+  const chooseLocale = (next: Locale) => {
+    setLocale(next);
+    setRequirement(copy[next].placeholder);
+    setResult(null);
+    setFile(null);
+  };
+
+  const upload = async (selected: File) => {
+    const extension = selected.name.split(".").pop()?.toLowerCase();
+    if (!extension || !["pdf", "docx", "txt", "md"].includes(extension))
+      return setError("Formato nao suportado. Envie PDF, DOCX, TXT ou MD.");
+    if (!selected.size) return setError("O arquivo esta vazio.");
+    if (selected.size > 5 * 1024 * 1024) return setError("O arquivo excede o limite de 5 MB.");
+    setError(null);
+    setUploading(true);
+    try {
+      const data = new FormData();
+      data.append("file", selected);
+      const response = await fetch("/api/extract", { method: "POST", body: data });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Falha ao extrair o documento.");
+      setRequirement(body.text);
+      setFile(selected);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao enviar o arquivo.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    setScreen("history");
+    setError(null);
+    try {
+      const response = await fetch("/api/analyses");
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Falha ao carregar historico.");
+      setHistory(body.analyses);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Falha ao carregar historico.");
+    }
+  };
+
+  const submit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("/api/analyses", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ requirement, additionalContext, locale }),
+      });
+      const body = await response.json();
+      if (!response.ok) throw new Error(body.error || "Analysis failed.");
+      setResult(body);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Analysis failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <main className="workspace">
+      <aside className="sidebar">
+        <div className="brand">QA<span>Veil</span> <small>AI</small></div>
+        <p>WORKSPACE</p>
+        <button className={screen === "analysis" ? "active" : ""} onClick={() => setScreen("analysis")}>Nova analise</button>
+        <button className={screen === "history" ? "active" : ""} onClick={loadHistory}>Historico</button>
+        <small className="provider-status">Provider configurado no servidor</small>
+      </aside>
+      <section className="surface">
+        <header>
+          <p>QUALITY ENGINEERING INTELLIGENCE</p>
+          <div className="language">
+            <button className={locale === "pt" ? "selected" : ""} onClick={() => chooseLocale("pt")}>PT</button>
+            <button className={locale === "en" ? "selected" : ""} onClick={() => chooseLocale("en")}>EN</button>
+          </div>
+        </header>
+        <div className="content">
+          {screen === "history" ? (
+            <History items={history} onBack={() => setScreen("analysis")} />
+          ) : (
+            <>
+              <h1>{t.title}</h1>
+              <p className="lead">{t.subtitle}</p>
+              <div className="analysis-layout">
+                <form className="input-card" onSubmit={submit}>
+                  <div
+                    className={`upload-zone ${dragging ? "drag-active" : ""}`}
+                    onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+                    onDragLeave={() => setDragging(false)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragging(false);
+                      const selected = e.dataTransfer.files[0];
+                      if (selected) void upload(selected);
+                    }}
+                  >
+                    {uploading ? (
+                      <p>Extraindo texto do documento...</p>
+                    ) : file ? (
+                      <div className="file-loaded">
+                        <span>{file.name} <small>({Math.ceil(file.size / 1024)} KB)</small></span>
+                        <button type="button" onClick={() => { setFile(null); setRequirement(""); }}>Remover</button>
+                      </div>
+                    ) : (
+                      <label className="upload-label">
+                        <input type="file" accept=".pdf,.docx,.txt,.md" hidden onChange={(e) => {
+                          const selected = e.target.files?.[0];
+                          if (selected) void upload(selected);
+                        }} />
+                        <b>Arraste um documento</b> ou clique para selecionar<br />
+                        <small>PDF, DOCX, TXT ou MD · max. 5 MB</small>
+                      </label>
+                    )}
+                  </div>
+                  <label htmlFor="requirement">{t.requirement} {file && <small>· texto extraido de {file.name}</small>}</label>
+                  <textarea id="requirement" value={requirement} onChange={(e) => setRequirement(e.target.value)} rows={8} />
+                  <label htmlFor="context">{t.context} <small>(opcional)</small></label>
+                  <input id="context" value={additionalContext} onChange={(e) => setAdditionalContext(e.target.value)} />
+                  <button className="primary" disabled={loading || uploading}>{loading ? t.analyzing : t.analyze}</button>
+                </form>
+                <Risk result={result} t={t} />
+              </div>
+              {error && <p className="error" role="alert">{error}</p>}
+              {result ? <AnalysisResult result={result} t={t} /> : (
+                <div className="empty">
+                  <b>Analise pronta para comecar</b>
+                  <p>Riscos, ambiguidades e casos de teste aparecerao aqui.</p>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </section>
+    </main>
+  );
 }
-function Risk({ result }: { result: AnalysisResponse | null }) { const risk = result?.analysis.risk; return <section className="risk-card"><span>RISK SCORE</span><div><strong>{risk?.score ?? "—"}</strong><b>{risk?.level ?? "PENDING"}</b></div><p>{risk?.rationale ?? "A analise de risco aparece apos avaliar o requisito."}</p><i style={{ width: `${(risk?.score ?? 0) * 5}%` }} /></section>; }
-function Gherkin({ content }: { content: string }) { const [copied, setCopied] = useState(false); const onCopy = async () => { try { await navigator.clipboard.writeText(content); setCopied(true); setTimeout(() => setCopied(false), 1800); } catch { setCopied(false); } }; return <section className="gherkin-wrapper"><div className="gherkin-header"><h4>GHERKIN</h4><button type="button" className="copy-btn" onClick={() => void onCopy()}>{copied ? "Copiado" : "Copiar Gherkin"}</button></div><pre className="gherkin-block">{content.split("\n").map((line, index) => { const keyword = line.match(/^(Feature|Scenario|Given|When|Then|And|Funcionalidade|Cenário|Dado|Quando|Então|E)(:)?/)?.[0]; return <code className="gh-line" key={index}>{keyword && <span className="gh-keyword">{keyword}</span>}{line.slice(keyword?.length ?? 0)}</code>; })}</pre></section>; }
-function ScenarioCard({ scenario }: { scenario: AnalysisResponse["analysis"]["scenarios"][number] }) { return <article className="scenario-card"><div className="scenario-topline"><span>{scenario.id}</span><div><i className="badge badge-type">{scenario.type}</i><i className={`badge badge-${scenario.priority.toLowerCase()}`}>{scenario.priority}</i><i className="badge badge-automation">{scenario.automation.replaceAll("_", " ")}</i></div></div><h3>{scenario.title}</h3><section className="scenario-description"><h4>Descricao</h4><p>{scenario.description}</p></section><div className="scenario-grid"><section><h4>Pre-requisitos</h4><ul>{scenario.prerequisites.map((item, index) => <li key={index}>{item}</li>)}</ul></section><section><h4>Dados de teste</h4><pre className="test-data-block">{scenario.testData || "N/A"}</pre></section></div><Gherkin content={scenario.gherkin} /></article>; }
-function AnalysisResult({ result, t }: { result: AnalysisResponse; t: typeof copy.pt | typeof copy.en }) { const groups = [[t.rules, result.analysis.businessRules], [t.ambiguities, result.analysis.ambiguities], [t.missing, result.analysis.missingInformation], [t.questions, result.analysis.questionsForPo]] as const; return <section className="results"><p className="result-provider">MODO: {result.provider}</p><h2>Analise do requisito</h2><p className="summary">{result.analysis.summary}</p><div className="result-grid">{groups.map(([title, items]) => <article key={title}><h3>{title}</h3><ul>{items.map((item, index) => <li key={index}>{item}</li>)}</ul></article>)}</div><section className="scenario-list"><h2>Test Cases</h2>{result.analysis.scenarios.map((scenario) => <ScenarioCard key={scenario.id} scenario={scenario} />)}</section></section>; }
-function History({ items, onBack }: { items: HistoryItem[] | null; onBack: () => void }) { return <section className="history"><button className="back" onClick={onBack}>← Voltar para analise</button><h1>Historico de analises</h1><p className="lead">As ultimas 50 analises salvas no banco de dados.</p>{items === null ? <div className="empty">Carregando historico...</div> : items.length === 0 ? <div className="empty"><b>Nenhuma analise salva ainda.</b><p>Configure DATABASE_URL e execute uma analise para criar o historico.</p></div> : <div className="history-list">{items.map((item) => <article key={item.id}><span>{new Date(item.createdAt).toLocaleString()}</span><b>{item.riskScore} · {item.riskLevel}</b><h3>{item.requirement}</h3><p>{item.summary}</p></article>)}</div>}</section>; }
+
+function RiskBar({ score, max = 5 }: { score: number; max?: number }) {
+  const pct = Math.round((score / max) * 100);
+  const color = pct >= 80 ? "var(--risk-critical)" : pct >= 60 ? "var(--risk-high)" : pct >= 40 ? "var(--risk-medium)" : "var(--risk-low)";
+  return (
+    <div className="risk-bar-track">
+      <div className="risk-bar-fill" style={{ width: `${pct}%`, background: color }} />
+    </div>
+  );
+}
+
+function Risk({ result, t }: { result: AnalysisResponse | null; t: typeof copy.pt | typeof copy.en }) {
+  const risk = result?.analysis.risk;
+  return (
+    <section className="risk-card">
+      <span>RISK SCORE</span>
+      <div>
+        <strong>{risk?.score ?? "—"}</strong>
+        <b>{risk?.level ?? "PENDING"}</b>
+      </div>
+      <p>{risk?.rationale ?? "A analise de risco aparece apos avaliar o requisito."}</p>
+      <i style={{ width: `${(risk?.score ?? 0) * 5}%` }} />
+      {risk && (
+        <div className="risk-factors-breakdown">
+          <p className="risk-breakdown-title">{t.riskBreakdown}</p>
+          {(["impact", "probability", "complexity", "detectability"] as const).map((factor) => (
+            <div key={factor} className="risk-factor-row">
+              <div className="risk-factor-label">
+                <span>{t[factor]}</span>
+                <b>{risk[factor].score}/5</b>
+              </div>
+              <RiskBar score={risk[factor].score} />
+              <small>{risk[factor].rationale}</small>
+            </div>
+          ))}
+          {risk.factors.length > 0 && (
+            <div className="risk-factor-tags">
+              {risk.factors.map((f, i) => <span key={i} className="tag">{f}</span>)}
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function Gherkin({ content }: { content: string }) {
+  const [copied, setCopied] = useState(false);
+  const onCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch {
+      setCopied(false);
+    }
+  };
+  return (
+    <section className="gherkin-wrapper">
+      <div className="gherkin-header">
+        <h4>GHERKIN</h4>
+        <button type="button" className="copy-btn" onClick={() => void onCopy()}>{copied ? "Copiado" : "Copiar Gherkin"}</button>
+      </div>
+      <pre className="gherkin-block">
+        {content.split("\n").map((line, index) => {
+          const keyword = line.match(/^(Feature|Scenario|Given|When|Then|And|Funcionalidade|Cenário|Dado|Quando|Então|E)(:)?/)?.[0];
+          return (
+            <code className="gh-line" key={index}>
+              {keyword && <span className="gh-keyword">{keyword}</span>}
+              {line.slice(keyword?.length ?? 0)}
+            </code>
+          );
+        })}
+      </pre>
+    </section>
+  );
+}
+
+function ScenarioCard({ scenario }: { scenario: AnalysisResponse["analysis"]["scenarios"][number] }) {
+  return (
+    <article className="scenario-card">
+      <div className="scenario-topline">
+        <span>{scenario.id}</span>
+        <div>
+          <i className="badge badge-type">{scenario.type}</i>
+          <i className={`badge badge-${scenario.priority.toLowerCase()}`}>{scenario.priority}</i>
+          <i className="badge badge-automation">{scenario.automation.replaceAll("_", " ")}</i>
+        </div>
+      </div>
+      <h3>{scenario.title}</h3>
+      <section className="scenario-description">
+        <h4>Descricao</h4>
+        <p>{scenario.description}</p>
+      </section>
+      <div className="scenario-grid">
+        <section>
+          <h4>Pre-requisitos</h4>
+          <ul>{scenario.prerequisites.map((item, index) => <li key={index}>{item}</li>)}</ul>
+        </section>
+        <section>
+          <h4>Dados de teste</h4>
+          <pre className="test-data-block">{scenario.testData || "N/A"}</pre>
+        </section>
+      </div>
+      <Gherkin content={scenario.gherkin} />
+    </article>
+  );
+}
+
+function StringList({ title, items }: { title: string; items: readonly string[] }) {
+  if (!items.length) return null;
+  return (
+    <article>
+      <h3>{title}</h3>
+      <ul>{items.map((item, i) => <li key={i}>{item}</li>)}</ul>
+    </article>
+  );
+}
+
+function AnalysisResult({ result, t }: { result: AnalysisResponse; t: typeof copy.pt | typeof copy.en }) {
+  const a = result.analysis;
+  const completenessLabel = a.completeness.status + " (" + a.completeness.score + "/100)";
+
+  return (
+    <section className="results">
+      <p className="result-provider">MODO: {result.provider}</p>
+      <h2>Analise do requisito</h2>
+      <p className="summary">{a.summary}</p>
+
+      {/* Completeness */}
+      <article>
+        <h3>{t.completeness}</h3>
+        <p><strong>{completenessLabel}</strong> — {a.completeness.rationale}</p>
+      </article>
+
+      {/* Facts / Gaps / Inferences / Contradictions */}
+      <StringList title={t.facts} items={a.requirementFacts} />
+      <StringList title={t.gaps} items={a.requirementGaps} />
+      <StringList title={t.inferredRisks} items={a.inferredRisks} />
+      <StringList title={t.contradictions} items={a.contradictions} />
+
+      {/* QA Impact */}
+      {(a.qaImpact.criticalAreas.length > 0 || a.qaImpact.recommendedTesting.length > 0 || a.qaImpact.regressionAreas.length > 0 || a.qaImpact.blockers.length > 0) && (
+        <article className="qa-impact-card">
+          <h3>{t.qaImpact}</h3>
+          <div className="qa-impact-grid">
+            {a.qaImpact.criticalAreas.length > 0 && (
+              <div>
+                <h4>{t.criticalAreas}</h4>
+                <ul>{a.qaImpact.criticalAreas.map((item, i) => <li key={i}>{item}</li>)}</ul>
+              </div>
+            )}
+            {a.qaImpact.recommendedTesting.length > 0 && (
+              <div>
+                <h4>{t.recommendedTesting}</h4>
+                <ul>{a.qaImpact.recommendedTesting.map((item, i) => <li key={i}>{item}</li>)}</ul>
+              </div>
+            )}
+            {a.qaImpact.regressionAreas.length > 0 && (
+              <div>
+                <h4>{t.regressionAreas}</h4>
+                <ul>{a.qaImpact.regressionAreas.map((item, i) => <li key={i}>{item}</li>)}</ul>
+              </div>
+            )}
+            {a.qaImpact.blockers.length > 0 && (
+              <div>
+                <h4>{t.blockers}</h4>
+                <ul>{a.qaImpact.blockers.map((item, i) => <li key={i}>{item}</li>)}</ul>
+              </div>
+            )}
+          </div>
+        </article>
+      )}
+
+      {/* Detail grid */}
+      <div className="result-grid">
+        <StringList title={t.actors} items={a.actors} />
+        <StringList title={t.preconditions} items={a.preconditions} />
+        <StringList title={t.postconditions} items={a.postconditions} />
+        <StringList title={t.dependencies} items={a.dependencies} />
+        <StringList title={t.rules} items={a.businessRules} />
+        <StringList title={t.missing} items={a.missingInformation} />
+        <StringList title={t.questions} items={a.questionsForPo} />
+        {a.ambiguities.length > 0 && (
+          <article>
+            <h3>{t.ambiguities}</h3>
+            <ul>
+              {a.ambiguities.map((amb, i) => (
+                <li key={i}>
+                  <strong>{amb.term}</strong>: {amb.problem}
+                  {amb.questionForPo && <em> → {amb.questionForPo}</em>}
+                </li>
+              ))}
+            </ul>
+          </article>
+        )}
+      </div>
+
+      {/* Test Scenarios */}
+      <section className="scenario-list">
+        <h2>Test Cases</h2>
+        {a.scenarios.map((scenario) => <ScenarioCard key={scenario.id} scenario={scenario} />)}
+      </section>
+    </section>
+  );
+}
+
+function History({ items, onBack }: { items: HistoryItem[] | null; onBack: () => void }) {
+  return (
+    <section className="history">
+      <button className="back" onClick={onBack}>← Voltar para analise</button>
+      <h1>Historico de analises</h1>
+      <p className="lead">As ultimas 50 analises salvas no banco de dados.</p>
+      {items === null ? (
+        <div className="empty">Carregando historico...</div>
+      ) : items.length === 0 ? (
+        <div className="empty">
+          <b>Nenhuma analise salva ainda.</b>
+          <p>Configure DATABASE_URL e execute uma analise para criar o historico.</p>
+        </div>
+      ) : (
+        <div className="history-list">
+          {items.map((item) => (
+            <article key={item.id}>
+              <span>{new Date(item.createdAt).toLocaleString()}</span>
+              <b>{item.riskScore} · {item.riskLevel}</b>
+              <h3>{item.requirement}</h3>
+              <p>{item.summary}</p>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
