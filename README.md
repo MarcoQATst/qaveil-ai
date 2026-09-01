@@ -1,63 +1,108 @@
-# QAVeil AI
+# 🛡️ QAVeil AI
 
-> Reveal what your requirements don't tell you.
+> **AI-assisted Quality Engineering platform for requirement analysis, risk assessment, test design, traceability and Playwright automation.**
 
-QAVeil AI is a Quality Engineering assistant that turns a requirement into structured QA intelligence: risk assessment, hidden risks, test scenarios, edge cases, Gherkin, coverage estimates, and automation recommendations.
+QAVeil AI, created by **Marco Aurélio Gomes**, transforms product requirements into structured QA artifacts while keeping human review and provenance visible.
 
-## MVP capabilities
+> **AI should assist QA reasoning — not replace it.**
 
-- Requirement analysis with ambiguities and questions for Product Owners
-- Risk score (impact, probability, complexity, and detectability)
-- Hidden-risk discovery for concurrency, retries, integrations, and authorization
-- Positive, negative, boundary, security, integration, and regression scenarios
-- Edge-case detection, Gherkin examples, and estimated coverage
-- Portuguese-first UI with an English switch
+## Pipeline
+
+```text
+Product / Project Context → Requirement → Analysis → Risk → Test Cases
+→ Coverage → QA Judge → Auto Correction → Final Review
+→ Traceability Matrix → Playwright Generation
+```
+
+## Features
+
+- Requirement analysis: behaviors, actors, business rules, dependencies, ambiguities, gaps and PO questions.
+- Risk analysis, detailed Test Cases, Gherkin, Coverage Summary and Regression Impact.
+- QA Judge, limited auto-correction cycles and final review.
+- Projects with persistent product context, documentation and confirmed rules.
+- Provenance and `POTENTIAL_REQUIREMENT_CONFLICT` reporting.
+- Playwright TypeScript generation with safe placeholders; no invented credentials, URLs, endpoints or selectors.
+- Markdown/PDF export from persisted snapshots, without a new AI request.
+
+## Traceability Matrix
+
+The deterministic matrix connects requirement behaviors and business rules to Test Cases, Gherkin and Playwright status.
+
+```text
+Requirement / Rule → Test Case → Gherkin → Playwright status
+```
+
+It exposes `REQ-*` / `BR-*` IDs, coverage metrics, filters, provenance and uncovered items.
+
+```text
+COVERED
+PARTIALLY_COVERED
+NOT_COVERED
+```
+
+Invalid references are discarded rather than creating phantom items. Existing snapshots use conservative deterministic matching. `PLAYWRIGHT_GENERATED` means code was generated in the current view; it does not mean automated execution has been confirmed.
+
+> Traceability Matrix export integration is still in progress.
 
 ## Architecture
 
-`UI → API/application service → QA domain logic → AIProvider → persistence`
+```text
+Presentation: Next.js / React
+Application: use cases, builders and QA flows
+Domain: AI contracts and QA concepts
+Infrastructure: Gemini, deterministic providers and Prisma
+```
 
-The `AIProvider` interface keeps QA logic independent of an LLM vendor. The MVP ships with a deterministic provider so it can be developed and tested without an API key.
+```text
+AIProvider: GeminiAIProvider | DeterministicAIProvider
+PlaywrightGenerator: GeminiPlaywrightGenerator | DeterministicPlaywrightGenerator
+```
 
-## Run locally
+## Local development
+
+Requirements: Node.js, npm and Docker Desktop.
 
 ```bash
-cp .env.example .env
+git clone https://github.com/MarcoQATst/qaveil-ai.git
+cd qaveil-ai
 npm install
+cp .env.example .env
+docker compose up -d
+npx prisma db push
 npm run dev
 ```
 
 Open `http://localhost:3000`.
 
-## Quality checks
+### Environment
+
+- `DATABASE_URL`: PostgreSQL connection string.
+- `AI_PROVIDER`: `deterministic` or `gemini`.
+- `GEMINI_API_KEY`: required only for Gemini and read server-side.
+
+Never commit `.env`, credentials or API keys.
+
+## Validation
 
 ```bash
-npm run test
+npm test
 npm run typecheck
 npm run build
 ```
 
-## Docker
-
-From a terminal with Docker access:
-
-```bash
-docker-compose up --build
-```
-
-The Compose stack starts the app and PostgreSQL. The Codex process may not have permission to run Docker locally; run this command from the user terminal when needed.
-
-## Environment
-
-- `DATABASE_URL`: PostgreSQL connection string
-- `AI_PROVIDER`: `deterministic` (local) or `gemini`
-- `GEMINI_API_KEY`: required only when `AI_PROVIDER=gemini`; it is read exclusively on the server
-- `DATABASE_URL`: enables persisted analysis history. After configuring it, run `npx prisma db push` to apply the local schema.
-
-## AI safety
-
-Requirements are handled as data, never executable instructions. The API validates its input and validates the provider's structured output with Zod before it is returned to the UI.
+Tests do not depend on Gemini, internet, quota or production keys. Deterministic providers and mocks keep them reproducible.
 
 ## Roadmap
 
-Next phases include persisted analysis history, a live LLM provider, exports, authentication, and Playwright code generation.
+Implemented: analysis, risk, Test Cases, Gherkin, QA Judge, correction, projects/context, Playwright generation, exports and Traceability Matrix UI.
+
+Planned: traceability export integration, advanced Playwright architecture, semantic retrieval/RAG, authentication, workspaces, integrations and Playwright execution.
+
+## Creator & maintainer
+
+**Marco Aurélio Gomes** — Creator, Developer and QA Engineer behind QAVeil AI.
+
+- LinkedIn: <https://www.linkedin.com/in/marcoaurelioqa>
+- GitHub: <https://github.com/MarcoQATst>
+
+Copyright © 2026 Marco Aurélio Gomes. QAVeil AI is an independent project under active development.
