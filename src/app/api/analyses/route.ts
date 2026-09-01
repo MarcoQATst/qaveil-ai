@@ -1,49 +1,56 @@
 import { NextResponse } from "next/server";
-import { analyzeRequirement } from "../../../application/analyze-requirement";
-import { DeterministicAIProvider } from "../../../infrastructure/ai/deterministic-provider";
-import { GeminiAIProvider } from "../../../infrastructure/ai/gemini-provider";
+import { analyzeWithReview } from "../../../application/qa-pipeline";
+import { createAiProviders } from "../../../infrastructure/ai/create-providers";
 import { listAnalyses, saveAnalysis } from "../../../infrastructure/persistence/analysis-repository";
 import { requirementInputSchema } from "../../../schemas/analysis";
+import { ProjectContextBuilder } from "../../../application/project-context-builder";
+import { getProject, listProjectContext } from "../../../infrastructure/persistence/project-repository";
 
-export async function GET() {
+export async function GET(request: Request) {
   if (!process.env.DATABASE_URL) {
     return NextResponse.json({ analyses: [] });
   }
 
   try {
-    return NextResponse.json({ analyses: await listAnalyses() });
-  } catch {
-    return NextResponse.json({ error: "Unable to load analysis history." }, { status: 500 });
+    const projectId = new URL(request.url).searchParams.get("projectId") || undefined;
+    return NextResponse.json({ analyses: await listAnalyses(projectId) });
+  } catch (error) {
+    console.warn("[QAVeil] Unable to load analysis history. Returning empty list.", error);
+    return NextResponse.json({ analyses: [] });
   }
 }
 
 export async function POST(request: Request) {
   try {
     const payload: unknown = await request.json();
-    const input = requirementInputSchema.parse(payload);
+    let input = requirementInputSchema.parse(payload);
+    if (input.projectId) {
+      const project = await getProject(input.projectId);
+      if (!project) return NextResponse.json({ error: "Project not found." }, { status: 404 });
+      input = requirementInputSchema.parse({ ...input, projectContext: new ProjectContextBuilder().build(project, await listProjectContext(project.id), input) });
+    }
+    const providers = createAiProviders();
+    const result = await analyzeWithReview(providers, input);
+    result.analysis.contextSourcesUsed = input.projectContext?.entries.map(({ type, title, source }) => ({ type, title, source })) ?? [];
+    if (result.originalAnalysis) result.originalAnalysis.contextSourcesUsed = result.analysis.contextSourcesUsed;
 
-    const providerName = process.env.AI_PROVIDER || "deterministic";
-    let provider;
-
-    if (providerName === "gemini") {
-      const apiKey = process.env.GEMINI_API_KEY;
-      if (!apiKey) {
-        throw new Error("GEMINI_API_KEY environment variable is not defined, but AI_PROVIDER is set to 'gemini'.");
+    try {
+      if (process.env.DATABASE_URL) {
+        const persisted = await saveAnalysis(input, result.analysis, {
+          review: result.review,
+          originalAnalysis: result.originalAnalysis,
+          initialReview: result.initialReview,
+        });
+        if (persisted && typeof persisted === "object" && "id" in persisted && typeof persisted.id === "string") result.analysisId = persisted.id;
       }
-      provider = new GeminiAIProvider(apiKey);
-    } else {
-      provider = new DeterministicAIProvider();
+    } catch (persistenceError) {
+      console.warn(
+        "[QAVeil] Unable to persist analysis. Continuing without database.",
+        persistenceError,
+      );
     }
 
-    const analysis = await analyzeRequirement(provider, input);
-
-    // The local deterministic mode remains usable without a database. In an
-    // intranet deployment DATABASE_URL enables durable history via Prisma.
-    if (process.env.DATABASE_URL) {
-      await saveAnalysis(input, analysis);
-    }
-
-    return NextResponse.json({ analysis, provider: provider.name });
+    return NextResponse.json(result);
   } catch (error) {
     const message = error instanceof Error ? error.message : "Unable to analyze the requirement.";
     return NextResponse.json({ error: message }, { status: 400 });

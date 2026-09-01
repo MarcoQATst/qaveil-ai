@@ -1,0 +1,5 @@
+import { NextResponse } from "next/server";
+import { extractDocument } from "../../../../../application/extract-document";
+import { addProjectContext, getProject } from "../../../../../infrastructure/persistence/project-repository";
+type Context = { params: Promise<{ id: string }> };
+export async function POST(request: Request, { params }: Context) { try { const id = (await params).id; if (!await getProject(id)) return NextResponse.json({ error: "Project not found." }, { status: 404 }); const file = (await request.formData()).get("file"); if (!(file instanceof File)) return NextResponse.json({ error: "No file uploaded." }, { status: 400 }); const entry = await addProjectContext(id, { type: "DOCUMENTATION", title: file.name, content: await extractDocument(file), source: "DOCUMENT_UPLOAD" }); return NextResponse.json({ entry }, { status: 201 }); } catch (error) { return NextResponse.json({ error: error instanceof Error ? error.message : "Unable to upload document." }, { status: 400 }); } }

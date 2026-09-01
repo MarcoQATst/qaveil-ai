@@ -65,6 +65,7 @@ describe("GeminiAIProvider", () => {
           description: "Request with registered email.",
           prerequisites: ["User has a registered account", "User has access to their email inbox"],
           testData: "Email: registered@example.com",
+          steps: ["Navigate to reset page", "Submit valid email"],
           gherkin: "Scenario: Successful password reset\n  Given the user is on the reset page\n  When they submit a valid email\n  Then a reset email should be sent",
           priority: "HIGH",
           expectedBehavior: "Recovery email sent.",
@@ -93,6 +94,16 @@ describe("GeminiAIProvider", () => {
         integration: 60,
         regression: 50,
         lowCoverageAreas: []
+      },
+      coverageSummary: {
+        totalTestCases: 1,
+        happyPathCases: 1,
+        negativeCases: 0,
+        edgeCases: 0,
+        validationCases: 0,
+        integrationCases: 0,
+        authorizationCases: 0,
+        uncoveredAreas: []
       }
     };
 
@@ -144,6 +155,10 @@ describe("GeminiAIProvider", () => {
     expect(result.risk.impact.score).toBe(4);
     expect(result.risk.detectability.score).toBe(3);
     expect(result.hiddenRisks[0].risk).toBe("Token reuse");
+    const requestBody = JSON.parse(String(fetchMock.mock.calls[0][1]?.body));
+    expect(requestBody.systemInstruction.parts[0].text).toContain("COVERAGE-FIRST TEST DESIGN");
+    expect(requestBody.systemInstruction.parts[0].text).toContain("NO fixed minimum or maximum");
+    expect(result.coverageSummary.totalTestCases).toBe(result.scenarios.length);
   });
 
   it("throws an error when Gemini API response is not ok", async () => {

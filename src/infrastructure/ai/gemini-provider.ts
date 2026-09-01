@@ -2,7 +2,7 @@ import type { AIProvider } from "../../domain/ai/provider";
 import type { RequirementAnalysis, RequirementInput } from "../../schemas/analysis";
 import { analysisResultSchema } from "../../schemas/analysis";
 
-const GEMINI_JSON_SCHEMA = {
+export const GEMINI_JSON_SCHEMA = {
   type: "object",
   properties: {
     completeness: {
@@ -102,12 +102,15 @@ const GEMINI_JSON_SCHEMA = {
           description: { type: "string" },
           prerequisites: { type: "array", items: { type: "string" } },
           testData: { type: "string" },
+          steps: { type: "array", items: { type: "string" } },
           gherkin: { type: "string" },
           priority: { type: "string", enum: ["LOW", "MEDIUM", "HIGH", "CRITICAL"] },
           expectedBehavior: { type: "string" },
-          automation: { type: "string", enum: ["MANUAL", "AUTOMATION_RECOMMENDED", "AUTOMATION_HIGHLY_RECOMMENDED"] }
+          automation: { type: "string", enum: ["MANUAL", "AUTOMATION_RECOMMENDED", "AUTOMATION_HIGHLY_RECOMMENDED"] },
+          coveredBehaviorIds: { type: "array", items: { type: "string" } },
+          coveredBusinessRuleIds: { type: "array", items: { type: "string" } }
         },
-        required: ["id", "title", "type", "category", "description", "prerequisites", "gherkin", "priority", "expectedBehavior", "automation"]
+        required: ["id", "title", "type", "category", "description", "prerequisites", "steps", "gherkin", "priority", "expectedBehavior", "automation", "coveredBehaviorIds", "coveredBusinessRuleIds"]
       }
     },
     edgeCases: {
@@ -146,6 +149,29 @@ const GEMINI_JSON_SCHEMA = {
         lowCoverageAreas: { type: "array", items: { type: "string" } }
       },
       required: ["functional", "negative", "boundary", "security", "integration", "regression", "lowCoverageAreas"]
+    },
+    coverageSummary: {
+      type: "object",
+      properties: {
+        totalTestCases: { type: "integer" },
+        happyPathCases: { type: "integer" },
+        negativeCases: { type: "integer" },
+        edgeCases: { type: "integer" },
+        validationCases: { type: "integer" },
+        integrationCases: { type: "integer" },
+        authorizationCases: { type: "integer" },
+        uncoveredAreas: { type: "array", items: { type: "string" } }
+      },
+      required: ["totalTestCases", "happyPathCases", "negativeCases", "edgeCases", "validationCases", "integrationCases", "authorizationCases", "uncoveredAreas"]
+    },
+    regressionImpact: {
+      type: "object",
+      properties: {
+        impactedModules: { type: "array", items: { type: "string" } }, relatedRules: { type: "array", items: { type: "string" } },
+        relatedFeatures: { type: "array", items: { type: "string" } }, recommendedRegressionScenarios: { type: "array", items: { type: "string" } },
+        potentialRequirementConflicts: { type: "array", items: { type: "string" } }
+      },
+      required: ["impactedModules", "relatedRules", "relatedFeatures", "recommendedRegressionScenarios", "potentialRequirementConflicts"]
     }
   },
   required: [
@@ -169,7 +195,8 @@ const GEMINI_JSON_SCHEMA = {
     "scenarios",
     "edgeCases",
     "gherkin",
-    "coverage"
+    "coverage",
+    "coverageSummary", "regressionImpact"
   ]
 };
 
@@ -262,11 +289,18 @@ DETAILED GUIDELINES FOR OTHER FIELDS:
 7. 'missingInformation': What is specifically absent that prevents writing deterministic tests.
 8. 'questionsForPo': Concrete questions that would allow writing better, more objective tests.
 9. 'hiddenRisks': Technical risks implied by the context (concurrency, race conditions, auth bypass, data leaks, latency, failure recovery). Mark each as inference.
-10. 'scenarios': Generate meaningful test scenarios based only on what is stated or reasonably inferable. Never fabricate a PASS/FAIL condition from an invented rule. Each scenario: id (TC-001...), title, type, category, description, prerequisites, testData, gherkin, priority, expectedBehavior, automation.
-11. 'edgeCases': Technical edge cases relevant to the requirement. Keep empty if not determinable.
-12. 'gherkin': At least 3 Gherkin scenarios (HAPPY_PATH, NEGATIVE, and optionally BOUNDARY or SECURITY) — only for testable requirements.
-13. 'coverage': Estimate percentages 0-100. If the requirement is too vague for reliable testing, keep these low.
-14. Every Gherkin block must start with Feature/Funcionalidade then Scenario/Cenário. Use 2-space indentation. No markdown fences.`;
+10. COVERAGE-FIRST TEST DESIGN (perform this internally before writing 'scenarios'):
+   a) Decompose the requirement into every explicitly described testable behavior: flows, alternatives, fields, rules, states, pre/postconditions, dependencies, actors/permissions, and integrations.
+   b) For EACH behavior, consider only relevant dimensions from this matrix: happy path, alternative variation, required/optional fields, valid/invalid values, boundaries/formats, explicit business rules, state transitions, authentication/authorization, integration/API errors, timeout/unavailability, duplicates/concurrency, persistence, recovery, edge cases, and regression.
+   c) Do NOT create a scenario just because a matrix dimension exists. Use it only when the requirement makes it applicable and a testable expectation is explicit. If an expectation is missing, record a gap/ambiguity/assumption instead of inventing an outcome.
+   d) Generate one or more specific scenarios for every behavior that needs independent verification. A complex requirement with multiple rules, flows, fields, states, or integrations must receive as many scenarios as coverage requires. There is NO fixed minimum or maximum number of scenarios.
+   e) Before returning, ask internally: "Does every explicitly described behavior have at least one Test Case?" and "Are relevant negative or boundary conditions from explicit rules covered?" Add only the supported missing scenarios.
+11. 'scenarios': Each scenario must have id (TC-001...), a specific title, type, priority, detailed description, explicit prerequisites, concrete test data derived from the requirement (or a clearly labelled gap), detailed steps, observable expectedBehavior, Gherkin, coveredBehaviorIds and coveredBusinessRuleIds. References may contain ONLY REQ-xxx / BR-xxx IDs that correspond to requirementFacts/businessRules in this same response. Never use generic steps such as "fill data", "click button", or "verify result". State exactly which requirement-defined data/action/result is involved. When the expected outcome is unknown, say it is a requirement gap; do not assert an invented behavior.
+12. 'edgeCases': Technical edge cases relevant to the requirement. Keep empty if not determinable.
+13. 'gherkin': Include only the Gherkin scenarios needed for supported test cases. Every Test Case Gherkin must start with Feature/Funcionalidade then Scenario/Cenário and use Given/Dado, When/Quando, Then/Então plus And/E only when needed. Use 2-space indentation. No markdown fences.
+14. 'coverage': Estimate percentages 0-100 based on the matrix dimensions actually relevant to this requirement. If the requirement is too vague for reliable testing, keep these low.
+15. 'coverageSummary': Count the generated scenarios by purpose. totalTestCases MUST equal scenarios.length. validationCases includes scenarios validating explicit field/rule/format constraints. uncoveredAreas lists explicit behaviors that could not receive an objective Test Case because the requirement omits the expected outcome; state the missing information. It must be empty when every explicit behavior is objectively covered.
+16. 'regressionImpact': Use ONLY relevant project context supplied with provenance. List known related modules, rules, features and supported regression scenarios. If a confirmed project rule conflicts with the current requirement, add a clear POTENTIAL_REQUIREMENT_CONFLICT entry. Keep all arrays empty when no project context is relevant.`;
 
 
     const userPrompt = `Please analyze the following requirement details:
@@ -274,7 +308,8 @@ Locale: ${input.locale}
 User Story: ${input.userStory || "Not provided"}
 Requirement: ${input.requirement}
 Acceptance Criteria: ${input.acceptanceCriteria || "Not provided"}
-Additional Context: ${input.additionalContext || "Not provided"}`;
+Additional Context: ${input.additionalContext || "Not provided"}
+Relevant Project Context (with provenance): ${input.projectContext?.promptContext || "Not provided"}`;
 
     const url = `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`;
 

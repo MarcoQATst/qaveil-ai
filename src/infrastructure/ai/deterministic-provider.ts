@@ -128,6 +128,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Usuário autenticado e com permissão", "Sistema online", "Dados de entrada válidos"]
             : ["Authenticated user with correct permission", "System online", "Valid input data"],
           testData: "N/A",
+          steps: portuguese ? ["Acessar o sistema", "Preencher os dados", "Enviar formulário"] : ["Access system", "Fill data", "Submit form"],
           gherkin: portuguese
             ? "Cenário: Executar fluxo com dados válidos\n  Dado que o usuário está autenticado e tem permissão\n  Quando envia dados de entrada válidos\n  Então o fluxo deve ser executado com sucesso"
             : "Scenario: Execute flow with valid data\n  Given the user is authenticated and has permission\n  When valid input data is submitted\n  Then the flow should be executed successfully",
@@ -145,6 +146,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Usuário está na tela/fluxo", "Dados inválidos preparados"]
             : ["User is in the workflow", "Invalid input data prepared"],
           testData: "Invalid input values",
+          steps: portuguese ? ["Acessar o formulário", "Preencher dados incorretos", "Tentar enviar"] : ["Access form", "Fill incorrect data", "Try to submit"],
           gherkin: portuguese
             ? "Cenário: Rejeitar dados inválidos\n  Dado que o usuário está no fluxo\n  Quando fornece dados inválidos\n  Então o sistema deve exibir uma mensagem de erro"
             : "Scenario: Reject invalid input\n  Given the user is in the workflow\n  When invalid data is submitted\n  Then the system should display an error message",
@@ -162,6 +164,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Valores de limite identificados"]
             : ["Boundary values identified"],
           testData: "Boundary edge cases",
+          steps: ["Input boundary values", "Submit request"],
           gherkin: portuguese
             ? "Cenário: Validar valores limite\n  Dado que os limites estão definidos\n  Quando os valores de limite são inseridos\n  Então o sistema deve processá-los corretamente"
             : "Scenario: Validate boundary values\n  Given boundary limits are defined\n  When boundary values are input\n  Then the system should process them correctly",
@@ -179,6 +182,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Sessão do usuário inválida ou expirada"]
             : ["Invalid or expired user session"],
           testData: "Expired token, missing token",
+          steps: ["Attempt restricted action"],
           gherkin: portuguese
             ? "Cenário: Bloquear acesso não autorizado\n  Dado que o usuário não está autenticado\n  Quando tenta executar a ação\n  Então o acesso deve ser bloqueado"
             : "Scenario: Block unauthorized access\n  Given the user is not authenticated\n  When attempting to perform the action\n  Then access should be blocked",
@@ -196,6 +200,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Serviço externo/integração offline"]
             : ["External integration service is offline"],
           testData: "N/A",
+          steps: ["Trigger integration action"],
           gherkin: portuguese
             ? "Cenário: Tratar falha da integração\n  Dado que o serviço de integração está offline\n  Quando a ação é solicitada\n  Então o sistema deve falhar graciosamente"
             : "Scenario: Handle integration failure\n  Given the integration service is offline\n  When the action is requested\n  Then the system should fail gracefully",
@@ -213,6 +218,7 @@ export class DeterministicAIProvider implements AIProvider {
             ? ["Alterações recentes implantadas"]
             : ["Recent changes deployed"],
           testData: "N/A",
+          steps: ["Run regression suite on related flows"],
           gherkin: portuguese
             ? "Cenário: Evitar regressão de dados existentes\n  Dado que a funcionalidade principal está ativa\n  Quando novos dados são processados\n  Então os dados existentes permanecem inalterados"
             : "Scenario: Avoid regression on existing data\n  Given primary functionality is active\n  When new data is processed\n  Then existing data remains unchanged",
@@ -238,6 +244,23 @@ export class DeterministicAIProvider implements AIProvider {
         functional: 85, negative: 75, boundary: 60, security: mentionsAuth ? 75 : 45, integration: mentionsIntegration ? 70 : 30, regression: 65,
         lowCoverageAreas: [portuguese ? "Limites e formatos de entrada" : "Input boundaries and formats", ...(mentionsIntegration ? [portuguese ? "Recuperação de falhas de integração" : "Integration-failure recovery"] : [])],
       },
+      coverageSummary: {
+        totalTestCases: 5,
+        happyPathCases: 1,
+        negativeCases: 2,
+        edgeCases: 1,
+        validationCases: 2,
+        integrationCases: mentionsIntegration ? 1 : 0,
+        authorizationCases: mentionsAuth ? 1 : 0,
+        uncoveredAreas: [
+          portuguese ? "Lacuna do requisito: limites e formatos de entrada não foram definidos." : "Requirement gap: input limits and formats are not defined.",
+          ...(mentionsIntegration ? [portuguese ? "Lacuna do requisito: comportamento de recuperação para indisponibilidade da integração não foi definido." : "Requirement gap: recovery behavior for integration unavailability is not defined."] : []),
+        ],
+      },
+      regressionImpact: input.projectContext?.regressionImpact ?? {
+        impactedModules: [], relatedRules: [], relatedFeatures: [], recommendedRegressionScenarios: [], potentialRequirementConflicts: [],
+      },
+      contextSourcesUsed: input.projectContext?.entries.map(({ type, title, source }) => ({ type, title, source })) ?? [],
     };
   }
 }
