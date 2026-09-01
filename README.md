@@ -24,6 +24,12 @@ Product / Project Context → Requirement → Analysis → Risk → Test Cases
 - Playwright TypeScript generation with safe placeholders; no invented credentials, URLs, endpoints or selectors.
 - Markdown/PDF export from persisted snapshots, without a new AI request.
 
+## Screenshot
+
+Example of an individual Test Case being converted into valid Playwright TypeScript. When the approved requirement does not define technical details, the generated code keeps clear placeholders and TODO comments instead of inventing application URLs, selectors, or data.
+
+![QAVeil AI Playwright automation generation](public/screenshots/qaveil-playwright-automation.png)
+
 ## Traceability Matrix
 
 The deterministic matrix connects requirement behaviors and business rules to Test Cases, Gherkin and Playwright status.
@@ -81,6 +87,8 @@ Open `http://localhost:3000`.
 - `GEMINI_API_KEY`: required only for Gemini and read server-side.
 
 Never commit `.env`, credentials or API keys.
+
+Security issues should follow the responsible-reporting guidance in [SECURITY.md](SECURITY.md).
 
 ## Validation
 
